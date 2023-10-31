@@ -48,6 +48,9 @@ int main() {
             j--;
         }
     }
+    if (remainder != 0) {
+        ans = getChar(remainder) + ans;
+    }
 
     cout << ans;
 
