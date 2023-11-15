@@ -4,28 +4,29 @@
 using std::pair;
 using std::vector;
 
-bool poly::isLine() {
-    /**
-     * @brief 
-     * Check if the polygon is a line
-     * 
-    */
 
-    // check if all the points are on the same line
-    // if they are, then the cross product of any 2 vectors should be 0
-    // let the first point be the origin
-    // then the cross product of the other 2 points should be 0
-    // (x1, y1) cross product (x2, y2) = x1 * y2 - x2 * y1
-    int len = points.size();
-    for (int i = 1; i < len - 1; ++i) {
-        double x1 = points[i].first - points[0].first;
-        double y1 = points[i].second - points[0].second;
-        double x2 = points[i + 1].first - points[0].first;
-        double y2 = points[i + 1].second - points[0].second;
-        if (x1 * y2 - x2 * y1 != 0) return false;
-    }
-    return true;
-}
+// bool poly::isLine() {
+//     /**
+//      * @brief 
+//      * Check if the polygon is a line
+//      * 
+//     */
+
+//     // check if all the points are on the same line
+//     // if they are, then the cross product of any 2 vectors should be 0
+//     // let the first point be the origin
+//     // then the cross product of the other 2 points should be 0
+//     // (x1, y1) cross product (x2, y2) = x1 * y2 - x2 * y1
+//     int len = points.size();
+//     for (int i = 1; i < len - 1; ++i) {
+//         double x1 = points[i].first - points[0].first;
+//         double y1 = points[i].second - points[0].second;
+//         double x2 = points[i + 1].first - points[0].first;
+//         double y2 = points[i + 1].second - points[0].second;
+//         if (x1 * y2 - x2 * y1 != 0) return false;
+//     }
+//     return true;
+// }
 
 bool poly::isValidPoly(pair<double, double> p1, pair<double, double> p2, pair<double, double> q1, pair<double, double> q2) {
     /**
@@ -35,6 +36,9 @@ bool poly::isValidPoly(pair<double, double> p1, pair<double, double> p2, pair<do
      * Let C = Q1Q2 cross product Q1P1, D = Q1Q2 cross product Q1P2
      * 
      * if A * B < 0 and C * D < 0, then intersect
+     * 
+     * @return true if p1p2 intersects q1q2
+     *         false if p1p2 does not intersect q1q2
      * 
     */
 
@@ -49,17 +53,45 @@ bool poly::isValidPoly(pair<double, double> p1, pair<double, double> p2, pair<do
     double C = (q2.first - q1.first) * (p1.second - q1.second) - (p1.first - q1.first) * (q2.second - q1.second);
     double D = (q2.first - q1.first) * (p2.second - q1.second) - (p2.first - q1.first) * (q2.second - q1.second);
 
-    return (A * B < 0) && (C * D < 0);
-
+    if (A * B < 0 && C * D < 0) {
+        return true;
+    } else if (A * B > 0 && C * D > 0) {
+        return false;
+    } else {
+        if (!A) {
+            // @return if Q2P1 dot Q2P2 <= 0, return true
+            double dot = (p1.first - q1.first) * (p2.first - q1.first) + (p1.second - q1.second) * (p2.second - q1.second);
+            if (dot <= 0) {
+                return true;
+            }
+        } 
+        if (!B) {
+            // @return if Q1P1 dot Q1P2 <= 0, return true
+            double dot = (p1.first - q2.first) * (p2.first - q2.first) + (p1.second - q2.second) * (p2.second - q2.second);
+            if (dot <= 0) {
+                return true;
+            }
+        }
+        if (!C) {
+            // @return if P1Q1 dot P1Q2 <= 0, return true
+            double dot = (q1.first - p1.first) * (q2.first - p1.first) + (q1.second - p1.second) * (q2.second - p1.second);
+            if (dot <= 0) {
+                return true;
+            }
+        }
+        if (!D) {
+            // @return if P2Q1 dot P2Q2 <= 0, return true
+            double dot = (q1.first - p2.first) * (q2.first - p2.first) + (q1.second - p2.second) * (q2.second - p2.second);
+            if (dot <= 0) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 poly::poly(vector<pair<double, double>> vc, int width, int height) : Fl_Window(width, height, "poly") {
     this->points = vc;
-
-    if (isLine()) {
-        valid = false;
-        return;
-    }
 
     // check if the polygon is valid
     int len = vc.size();

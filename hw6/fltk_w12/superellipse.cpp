@@ -3,13 +3,12 @@
 #include "Graph.h"
 #include <cmath>    // calculate pow
 
-superellipse::superellipse(double a, double b, double m, double n, int N, int k, int width, int height) : Fl_Window(width, height, "superellipse") {
+superellipse::superellipse(double a, double b, double m, double n, int N, int width, int height) : Fl_Window(width, height, "superellipse") {
     this->a = a;
     this->b = b;
     this->m = m;
     this->n = n;
     this->N = N;
-    this->k = k;
     this->points.resize(N);
 
     /**
@@ -21,15 +20,19 @@ superellipse::superellipse(double a, double b, double m, double n, int N, int k,
 
     if (this->N % 2 == 0) {
         double slot = this->b / (this->N / 2);
+        int flag = 1;
         for(int i = 0; i < this->N / 2; ++i) {
-            this->points[i] = std::make_pair(-slot * (i + 1), abs(pow(1 - pow(slot * (i + 1) / this->a, this->m), 1 / this->n)) * this->b);
-            this->points[i + this->N / 2] = std::make_pair(slot * (i + 1), abs(pow(1 - pow(slot * (i + 1) / this->a, this->m), 1 / this->n)) * this->b);
+            this->points[i] = std::make_pair(-slot * (i + 1), flag * abs(pow(1 - pow(slot * (i + 1) / this->a, this->m), 1 / this->n)) * this->b);
+            this->points[i + this->N / 2] = std::make_pair(slot * (i + 1), flag * abs(pow(1 - pow(slot * (i + 1) / this->a, this->m), 1 / this->n)) * this->b);
+            flag *= -1;
         }
     } else {
         double slot = this->b / ((this->N - 1) / 2);
+        int flag = 1;
         for(int i = 0; i < (this->N - 1) / 2; ++i) {
-            this->points[i] = std::make_pair(-slot * (i + 1), abs(pow(1 - pow(slot * (i + 1) / this->a, this->m), 1 / this->n)) * this->b);
-            this->points[i + (this->N - 1) / 2 + 1] = std::make_pair(slot * (i + 1), abs(pow(1 - pow(slot * (i + 1) / this->a, this->m), 1 / this->n)) * this->b);
+            this->points[i] = std::make_pair(-slot * (i + 1), flag * abs(pow(1 - pow(slot * (i + 1) / this->a, this->m), 1 / this->n)) * this->b);
+            this->points[i + (this->N - 1) / 2 + 1] = std::make_pair(slot * (i + 1), flag * (pow(1 - pow(slot * (i + 1) / this->a, this->m), 1 / this->n)) * this->b);
+            flag *= -1;
         }
         this->points[(this->N - 1) / 2] = std::make_pair(0, this->b);
     }

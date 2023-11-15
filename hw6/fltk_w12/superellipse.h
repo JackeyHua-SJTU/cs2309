@@ -13,14 +13,15 @@ private:
     double m;
     double n;
     int N;   // select N points on the curve
-    int k;   // each point connects to k points
     std::vector<std::pair<double, double>> points; 
 
 public:
-    superellipse(double a, double b, double m, double n, int N, int k, int width, int height);
+    superellipse(double a, double b, double m, double n, int N, int width, int height);
     std::vector<std::pair<double, double>> getPoints() { return this->points; }
 
-    // TODO : Modify drawing logic, make points alternate over and below x axis (bipartite)
+    // mean distributed in x axis
+    // y value alternates over and below x axis
+    // like a bipartite graph
     void draw() override;   // draw the superellipse    
 };
 

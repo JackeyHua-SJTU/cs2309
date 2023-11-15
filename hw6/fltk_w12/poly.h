@@ -10,7 +10,6 @@ private:
     std::vector<std::pair<double, double>> points;
     bool valid;
 
-    // TODO : delete isLine() and put it inside isValidPoly
     bool isValidPoly(std::pair<double, double> p1, std::pair<double, double> p2, std::pair<double, double> q1, std::pair<double, double> q2);
 
     bool isLine();
