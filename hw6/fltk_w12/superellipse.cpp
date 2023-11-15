@@ -3,7 +3,7 @@
 #include "Graph.h"
 #include <cmath>    // calculate pow
 
-superellipse::superellipse(double a, double b, double m, double n, int N, int k) {
+superellipse::superellipse(double a, double b, double m, double n, int N, int k, int width, int height) : Fl_Window(width, height, "superellipse") {
     this->a = a;
     this->b = b;
     this->m = m;
@@ -35,4 +35,60 @@ superellipse::superellipse(double a, double b, double m, double n, int N, int k)
     }
 }
 
+void superellipse::draw() {
+    Fl_Window::draw();
 
+    // 获取窗口的宽度和高度
+    int w = this->w();
+    int h = this->h();
+
+    // 绘制坐标轴
+    fl_color(FL_BLACK);
+    fl_line(50, h / 2, w - 50, h / 2);  // x轴
+    fl_line(w / 2, 50, w / 2, h - 50);  // y轴
+
+    // 绘制轴箭头
+    int arrowSize = 10;
+    fl_polygon(w - 50, h / 2, w - 50 - arrowSize, h / 2 - arrowSize, w - 50 - arrowSize, h / 2 + arrowSize);  // x轴箭头
+    fl_polygon(w / 2, 50, w / 2 - arrowSize, 50 + arrowSize, w / 2 + arrowSize, 50 + arrowSize);  // y轴箭头
+
+    // 绘制轴名称
+    fl_color(FL_BLACK);
+    fl_font(FL_HELVETICA_BOLD, 14);
+    fl_draw("X Axis", w - 50, h / 2 + 20);
+    fl_draw("Y Axis", w / 2 + 10, 50);
+
+    // 在x轴上标注点
+    for (int i = 1; i <= 6; i++) {
+        int x_pos = w / 2 + i * 50;
+        int x_neg = w / 2 - i * 50;
+        int y = h / 2;
+        fl_circle(x_pos, y, 2);
+        fl_circle(x_neg, y, 2);
+        fl_draw(std::to_string(i * 50).c_str(), x_pos - 5, y + 15);
+        fl_draw(std::to_string(i * 50).c_str(), x_neg - 5, y - 15);
+    }
+        
+    // 在y轴上标注点
+    for (int i = 1; i <= 4; i++) {
+        int x = w / 2;
+        int y_pos = h / 2 - i * 50;
+        int y_neg = h / 2 + i * 50;
+        fl_circle(x, y_pos, 2);
+        fl_circle(x, y_neg, 2);
+        fl_draw(std::to_string(i * 50).c_str(), x - 25, y_pos + 5);
+        fl_draw(std::to_string(i * 50).c_str(), x - 25, y_neg + 5);
+    }
+
+    for (auto&& [x, y] : this->points) {
+        fl_color(FL_RED);
+        fl_circle(x + w / 2, y + h / 2, 2);
+    }
+
+    for (int i = 0; i < this->points.size(); ++i) {
+        for (int j = i; j < this->points.size(); ++j) {
+            fl_color(FL_RED);
+            fl_line(this->points[i].first + w / 2, this->points[i].second + h / 2, this->points[j].first + w / 2, this->points[j].second + h / 2);
+        }
+    }
+}
