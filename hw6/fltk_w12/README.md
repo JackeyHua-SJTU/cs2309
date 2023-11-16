@@ -3,7 +3,7 @@
 ### superellipse
 有 $a,b,m,n,N$ 六个成员变量用来表示超椭圆的参数以及绘图的参数，$points$成员数组用来保存点的坐标。
 
-在构造函数`superellipse(double a, double b, double m, double n, int N, int width, int height);`中，除了需要传入题目要求的 $a,b,m,n,N$ 之外，还 **必须** 指定 **绘图窗口的宽 $width$ 和高 $height$**。在`main.cpp`中默认了绘图窗口的大小为 $800\times600$。
+在构造函数`superellipse(double a, double b, double m, double n, int N, int width, int height);`中，除了需要传入题目要求的 $a,b,m,n,N$ 之外，还 **必须** 指定 **绘图窗口的宽 $width$ 和高 $height$**，在这种情况下，默认会把每个点与其他所有的点都连接一条有向边。在构造函数`superellipse(double a, double b, double m, double n, int N, int k, int width, int height);`中可以指定每个点的连接数`k`，程序会在其余的点集中随机选取 $k$ 个点与其相连。在`main.cpp`中默认了绘图窗口的大小为 $800\times600$。
 
 `draw()`中选择在 $x$ 坐标上间隔均匀，但在 $y$ 坐标上正负交替，即相邻点的 $x$ 坐标之差相等，$y$坐标一个大于0，在 $x$ 轴上方，另外一个小于0，在 $x$ 轴下方。这样可以使绘制出的图更加美观。在本函数中将每一个点 **与其他所有的点相连接**，构成一张完全图。
 

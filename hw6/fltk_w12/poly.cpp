@@ -123,8 +123,10 @@ void poly::draw() {
 
     // 绘制轴箭头
     int arrowSize = 10;
-    fl_polygon(w - 50, h / 2, w - 50 - arrowSize, h / 2 - arrowSize, w - 50 - arrowSize, h / 2 + arrowSize);  // x轴箭头
-    fl_polygon(w / 2, 50, w / 2 - arrowSize, 50 + arrowSize, w / 2 + arrowSize, 50 + arrowSize);  // y轴箭头
+    fl_line(w - 50, h / 2, static_cast<int>(w - 50 - arrowSize * cos(M_PI / 6.0)), static_cast<int>(h / 2 - arrowSize * sin(M_PI / 6.0)));
+    fl_line(w - 50, h / 2, static_cast<int>(w - 50 - arrowSize * cos(M_PI / 6.0)), static_cast<int>(h / 2 + arrowSize * sin(M_PI / 6.0)));
+    fl_line(w / 2, 50, static_cast<int>(w / 2 - arrowSize * sin(M_PI / 6.0)), static_cast<int>(50 + arrowSize * cos(M_PI / 6.0)));
+    fl_line(w / 2, 50, static_cast<int>(w / 2 + arrowSize * sin(M_PI / 6.0)), static_cast<int>(50 + arrowSize * cos(M_PI / 6.0)));
 
     // 绘制轴名称
     fl_color(FL_BLACK);

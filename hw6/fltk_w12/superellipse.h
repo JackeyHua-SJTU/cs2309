@@ -13,10 +13,14 @@ private:
     double m;
     double n;
     int N;   // select N points on the curve
+    int k;   // connects to k points
     std::vector<std::pair<double, double>> points; 
 
 public:
+    // default k = N - 1
     superellipse(double a, double b, double m, double n, int N, int width, int height);
+    // can configure k
+    superellipse(double a, double b, double m, double n, int N, int k, int width, int height);
     std::vector<std::pair<double, double>> getPoints() { return this->points; }
 
     // mean distributed in x axis
