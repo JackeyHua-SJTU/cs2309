@@ -1,12 +1,11 @@
-#ifndef _POLYGON_HPP_
-#define _POLYGON_HPP_
+#ifndef POLYGON_HPP_
+#define POLYGON_HPP_
 
 #include <vector>
 
 
 class Polygon {
 private:
-    
 
     void sort_points();
 
@@ -15,7 +14,7 @@ private:
     double count_area();
 
 public:
-    Polygon(std::vector<std::pair<double, double>>&& points);
+    Polygon(std::vector<std::pair<double, double>> points);
 
     Polygon() = default;
 

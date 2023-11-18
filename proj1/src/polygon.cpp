@@ -1,6 +1,6 @@
 #include <algorithm>
 #include <cmath>
-#include "polygon.hpp"
+#include "polygon.h"
 
 void Polygon::sort_points() {
     // 使用扫描线算法对多边形的顶点进行排序
@@ -51,6 +51,6 @@ double Polygon::angle(std::pair<double, double> src, std::pair<double, double> d
     return std::atan((y2 - y1) / (x2 - x1));
 }
 
-Polygon::Polygon(std::vector<std::pair<double, double>>&& points) {
-    Polygon::points = points;
+Polygon::Polygon(std::vector<std::pair<double, double>> points) {
+    Polygon::points = std::move(points);
 }
