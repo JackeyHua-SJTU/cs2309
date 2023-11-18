@@ -27,6 +27,7 @@ public:
     // y value alternates over and below x axis
     // like a bipartite graph
     void draw() override;   // draw the superellipse    
+    void valid();   // check if k < N, otherwise raise an exception
 };
 
 #endif

@@ -158,11 +158,11 @@ void poly::draw() {
 
     for (auto&& [x, y] : this->points) {
         fl_color(FL_RED);
-        fl_circle(x + w / 2, y + h / 2, 2);
+        fl_circle(x + w / 2, -y + h / 2, 2);
     }
 
     for (int i = 0;i < this->points.size(); ++i) {
-        fl_line(this->points[i].first + w / 2, this->points[i].second + h / 2, this->points[(i + 1) % this->points.size()].first + w / 2, this->points[(i + 1) % this->points.size()].second + h / 2);
+        fl_line(this->points[i].first + w / 2, -this->points[i].second + h / 2, this->points[(i + 1) % this->points.size()].first + w / 2, -this->points[(i + 1) % this->points.size()].second + h / 2);
     }
 
 }

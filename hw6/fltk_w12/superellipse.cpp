@@ -1,6 +1,4 @@
 #include "superellipse.h"
-#include "Simple_window.h"
-#include "Graph.h"
 #include <cmath>    // calculate pow
 #include <random>   // randomly select points if required
 #include <set>      // store selected points if required
@@ -25,8 +23,8 @@ superellipse::superellipse(double a, double b, double m, double n, int N, int wi
         double slot = this->b / (this->N / 2);
         int flag = 1;
         for(int i = 0; i < this->N / 2; ++i) {
-            this->points[i] = std::make_pair(-slot * (i + 1), flag * abs(pow(1 - pow(slot * (i + 1) / this->a, this->m), 1 / this->n)) * this->b);
-            this->points[i + this->N / 2] = std::make_pair(slot * (i + 1), flag * abs(pow(1 - pow(slot * (i + 1) / this->a, this->m), 1 / this->n)) * this->b);
+            this->points[i] = std::make_pair(-slot * (i + 1), flag * abs(pow(1 - abs(pow(slot * (i + 1) / this->a, this->m)), 1 / this->n) * this->b));
+            this->points[i + this->N / 2] = std::make_pair(slot * (i + 1), flag * abs(pow(1 - abs(pow(slot * (i + 1) / this->a, this->m)), 1 / this->n) * this->b));
             // std::cout << "points [" << i << "] is : " << this->points[i].first << " " << this->points[i].second << std::endl;
             flag *= -1;
         }
@@ -34,8 +32,8 @@ superellipse::superellipse(double a, double b, double m, double n, int N, int wi
         double slot = this->b / ((this->N - 1) / 2);
         int flag = 1;
         for(int i = 0; i < (this->N - 1) / 2; ++i) {
-            this->points[i] = std::make_pair(-slot * (i + 1), flag * abs(pow(1 - pow(slot * (i + 1) / this->a, this->m), 1 / this->n)) * this->b);
-            this->points[i + (this->N - 1) / 2 + 1] = std::make_pair(slot * (i + 1), flag * (pow(1 - pow(slot * (i + 1) / this->a, this->m), 1 / this->n)) * this->b);
+            this->points[i] = std::make_pair(-slot * (i + 1), flag * abs(pow(1 - abs(pow(slot * (i + 1) / this->a, this->m)), 1 / this->n) * this->b));
+            this->points[i + (this->N - 1) / 2 + 1] = std::make_pair(slot * (i + 1), flag * abs(pow(1 - abs(pow(slot * (i + 1) / this->a, this->m)), 1 / this->n) * this->b));
             flag *= -1;
         }
         this->points[(this->N - 1) / 2] = std::make_pair(0, this->b);
@@ -62,19 +60,25 @@ superellipse::superellipse(double a, double b, double m, double n, int N, int k,
         double slot = this->b / (this->N / 2);
         int flag = 1;
         for(int i = 0; i < this->N / 2; ++i) {
-            this->points[i] = std::make_pair(-slot * (i + 1), flag * abs(pow(1 - pow(slot * (i + 1) / this->a, this->m), 1 / this->n)) * this->b);
-            this->points[i + this->N / 2] = std::make_pair(slot * (i + 1), flag * abs(pow(1 - pow(slot * (i + 1) / this->a, this->m), 1 / this->n)) * this->b);
+            this->points[i] = std::make_pair(-slot * (i + 1), flag * abs(pow(1 - abs(pow(slot * (i + 1) / this->a, this->m)), 1 / this->n) * this->b));
+            this->points[i + this->N / 2] = std::make_pair(slot * (i + 1), flag * abs(pow(1 - abs(pow(slot * (i + 1) / this->a, this->m)), 1 / this->n) * this->b));
             flag *= -1;
         }
     } else {
         double slot = this->b / ((this->N - 1) / 2);
         int flag = 1;
         for(int i = 0; i < (this->N - 1) / 2; ++i) {
-            this->points[i] = std::make_pair(-slot * (i + 1), flag * abs(pow(1 - pow(slot * (i + 1) / this->a, this->m), 1 / this->n)) * this->b);
-            this->points[i + (this->N - 1) / 2 + 1] = std::make_pair(slot * (i + 1), flag * (pow(1 - pow(slot * (i + 1) / this->a, this->m), 1 / this->n)) * this->b);
+            this->points[i] = std::make_pair(-slot * (i + 1), flag * abs(pow(1 - abs(pow(slot * (i + 1) / this->a, this->m)), 1 / this->n) * this->b));
+            this->points[i + (this->N - 1) / 2 + 1] = std::make_pair(slot * (i + 1), flag * abs(pow(1 - abs(pow(slot * (i + 1) / this->a, this->m)), 1 / this->n) * this->b));
             flag *= -1;
         }
         this->points[(this->N - 1) / 2] = std::make_pair(0, this->b);
+    }
+}
+
+void superellipse::valid() {
+    if (this->k >= this->N) {
+        throw std::runtime_error("k is greater or equal than N. Check k again.");
     }
 }
 
@@ -178,5 +182,14 @@ void superellipse::draw() {
                 fl_line(x2 / 3.0 + x1 * 2.0 / 3.0, y2 / 3.0 + y1 * 2.0 / 3.0, static_cast<int>(x2 / 3.0 + x1 * 2.0 / 3.0 - arrowLength * cos(angle + M_PI / 6.0)), static_cast<int>(y2 / 3.0 + y1 * 2.0 / 3.0 - arrowLength * sin(angle + M_PI / 6.0)));
             }
         }
+    }
+
+    fl_color(FL_DARK_MAGENTA);
+    int x0 = w / 2, y0 = h / 2;
+
+    for (int x = x0 - a; x <= x0 + a; ++x) {
+        double y = abs(pow(1 - abs(pow((x - x0) / a, m)), 1 / n) * b);
+        fl_point(x, y0 + y);
+        fl_point(x, y0 - y);
     }
 }

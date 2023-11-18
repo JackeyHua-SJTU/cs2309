@@ -17,8 +17,34 @@ using std::cin;
 
 int main() {
 //----------------------------------TASK1----------------------------------------
-    superellipse s1(300, 200, 2, 2, 10, 5, 800, 600);    // 指定k为5
-    superellipse s2(300, 200, 2, 2, 10, 800, 600);       // 不指定k 
+    // 此部分为截图中用的测试数据，如果需要用命令行输入数据，请注释本部分，然后解注释下面(line 51)的命令行输入部分
+
+    superellipse s1(300, 200, 2, 2, 10, 11, 800, 600);    // 指定k为11，需要抛出异常
+    superellipse s2(300, 200, 2, 2, 10, 800, 600);  // 不指定k
+    superellipse s3(300, 200, 3, 3, 10, 5, 800, 600);   // 指定k为5
+    try {
+        s1.valid();
+        s1.show();
+    }
+    catch (const std::exception& e) {
+        std::cout << "Exception caught : " << e.what() << std::endl;
+    }
+
+    try {
+        s2.valid();
+        s2.show();
+    }
+    catch (const std::exception& e) {
+        std::cout << "Exception caught : " << e.what() << std::endl;
+    }
+
+    try {
+        s3.valid();
+        s3.show();
+    }
+    catch (const std::exception& e) {
+        std::cout << "Exception caught : " << e.what() << std::endl;
+    }
 
     // 如果采用命令行输入，那么请注释掉上面一行，并恢复下面的输入代码
 
@@ -26,16 +52,23 @@ int main() {
     // int N, K;
     // cin >> a >> b >> m >> n >> N >> K;
     // superellipse s(a, b, m, n, N, K, 800, 600);
+    // try {
+    //     s.valid();
+    //     s.show();
+    // }
+    // catch (const std::exception& e) {
+    //     std::cout << "Exception caught : " << e.what() << std::endl;
+    // }
     
-    s1.show();
-    s2.show();
+    
 
 //---------------------------------TASK2-----------------------------------------
+    // 此部分为截图中用的测试数据，如果需要用命令行输入数据，请注释本部分，然后解注释下面(line 89)的命令行输入部分
 
-    vector<pair<double, double>> valid_points = {{0, 0}, {100, 0}, {100, 100}, {0, 100}};
+    vector<pair<double, double>> valid_points = {{0, 0}, {100, 0}, {100, 100}, {-100, 0}, {-200, -200}, {-100, -100}};
 
     vector<pair<double, double>> invalid_points = {{0, 0}, {100, 0}, {100, 100}, {0, -100}};
-    
+
     poly p1(valid_points, 800, 600);
     poly p2(invalid_points, 800, 600);
 
