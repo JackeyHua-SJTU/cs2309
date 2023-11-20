@@ -92,6 +92,11 @@ bool poly::isValidPoly(pair<double, double> p1, pair<double, double> p2, pair<do
 
 poly::poly(vector<pair<double, double>> vc, int width, int height) : Fl_Window(width, height, "poly") {
     this->points = vc;
+    
+    if (vc.size() <= 2) {
+        valid = false;
+        return;
+    }
 
     // check if the polygon is valid
     int len = vc.size();
@@ -118,24 +123,24 @@ void poly::draw() {
 
     // draw x and y axis at the center of the window
     fl_color(FL_BLACK);
-    fl_line(50, h / 2, w - 50, h / 2);  // x axis
-    fl_line(w / 2, 50, w / 2, h - 50);  // y axis
+    fl_line(30, h / 2, w - 30, h / 2);  // x axis
+    fl_line(w / 2, 30, w / 2, h - 30);  // y axis
 
     // draw arrow on the postive end of x and y axis
     int arrowSize = 10;
-    fl_line(w - 50, h / 2, static_cast<int>(w - 50 - arrowSize * cos(M_PI / 6.0)), static_cast<int>(h / 2 - arrowSize * sin(M_PI / 6.0)));
-    fl_line(w - 50, h / 2, static_cast<int>(w - 50 - arrowSize * cos(M_PI / 6.0)), static_cast<int>(h / 2 + arrowSize * sin(M_PI / 6.0)));
-    fl_line(w / 2, 50, static_cast<int>(w / 2 - arrowSize * sin(M_PI / 6.0)), static_cast<int>(50 + arrowSize * cos(M_PI / 6.0)));
-    fl_line(w / 2, 50, static_cast<int>(w / 2 + arrowSize * sin(M_PI / 6.0)), static_cast<int>(50 + arrowSize * cos(M_PI / 6.0)));
+    fl_line(w - 30, h / 2, static_cast<int>(w - 30 - arrowSize * cos(M_PI / 6.0)), static_cast<int>(h / 2 - arrowSize * sin(M_PI / 6.0)));
+    fl_line(w - 30, h / 2, static_cast<int>(w - 30 - arrowSize * cos(M_PI / 6.0)), static_cast<int>(h / 2 + arrowSize * sin(M_PI / 6.0)));
+    fl_line(w / 2, 30, static_cast<int>(w / 2 - arrowSize * sin(M_PI / 6.0)), static_cast<int>(30 + arrowSize * cos(M_PI / 6.0)));
+    fl_line(w / 2, 30, static_cast<int>(w / 2 + arrowSize * sin(M_PI / 6.0)), static_cast<int>(30 + arrowSize * cos(M_PI / 6.0)));
 
     // add "X Axis" and "Y Axis" to the end of x and y axis
     fl_color(FL_BLACK);
     fl_font(FL_HELVETICA_BOLD, 14);
-    fl_draw("X Axis", w - 50, h / 2 + 20);
-    fl_draw("Y Axis", w / 2 + 10, 50);
+    fl_draw("X Axis", w - 50, h / 2 + 40);
+    fl_draw("Y Axis", w / 2 + 10, 30);
 
     // list points on x axis
-    for (int i = 1; i <= 6; i++) {
+    for (int i = 1; i <= w / 100 - 1; i++) {
         // gap = 50
         int x_pos = w / 2 + i * 50;
         int x_neg = w / 2 - i * 50;
@@ -148,7 +153,7 @@ void poly::draw() {
     }
         
     // list points on y axis
-    for (int i = 1; i <= 4; i++) {
+    for (int i = 1; i <= h / 100 - 1; i++) {
         int x = w / 2;
         int y_pos = h / 2 - i * 50;
         int y_neg = h / 2 + i * 50;

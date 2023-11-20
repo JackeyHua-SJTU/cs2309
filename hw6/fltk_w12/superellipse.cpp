@@ -77,6 +77,18 @@ superellipse::superellipse(double a, double b, double m, double n, int N, int k,
 }
 
 void superellipse::valid() {
+    if (this->m <= 0) {
+        throw std::runtime_error("m is less or equal than 0. Check m again.");
+    }
+    if (this->n <= 0) {
+        throw std::runtime_error("n is less or equal than 0. Check n again.");
+    }
+    if (this->N <= 0) {
+        throw std::runtime_error("N is less or equal than 0. Check N again.");
+    }
+    if (this->k <= 0) {
+        throw std::runtime_error("k is less or equal than 0. Check k again.");
+    }
     if (this->k >= this->N) {
         throw std::runtime_error("k is greater or equal than N. Check k again.");
     }
@@ -91,25 +103,25 @@ void superellipse::draw() {
 
     // draw x and y axis at the center of the window
     fl_color(FL_BLACK);
-    fl_line(50, h / 2, w - 50, h / 2);  // x轴
-    fl_line(w / 2, 50, w / 2, h - 50);  // y轴
+    fl_line(30, h / 2, w - 30, h / 2);  // x轴
+    fl_line(w / 2, 30, w / 2, h - 30);  // y轴
 
     // draw arrow on the end of x and y axis
     int arrowSize = 10;
-    fl_line(w - 50, h / 2, static_cast<int>(w - 50 - arrowSize * cos(M_PI / 6.0)), static_cast<int>(h / 2 - arrowSize * sin(M_PI / 6.0)));
-    fl_line(w - 50, h / 2, static_cast<int>(w - 50 - arrowSize * cos(M_PI / 6.0)), static_cast<int>(h / 2 + arrowSize * sin(M_PI / 6.0)));
-    fl_line(w / 2, 50, static_cast<int>(w / 2 - arrowSize * sin(M_PI / 6.0)), static_cast<int>(50 + arrowSize * cos(M_PI / 6.0)));
-    fl_line(w / 2, 50, static_cast<int>(w / 2 + arrowSize * sin(M_PI / 6.0)), static_cast<int>(50 + arrowSize * cos(M_PI / 6.0)));
+    fl_line(w - 30, h / 2, static_cast<int>(w - 30 - arrowSize * cos(M_PI / 6.0)), static_cast<int>(h / 2 - arrowSize * sin(M_PI / 6.0)));
+    fl_line(w - 30, h / 2, static_cast<int>(w - 30 - arrowSize * cos(M_PI / 6.0)), static_cast<int>(h / 2 + arrowSize * sin(M_PI / 6.0)));
+    fl_line(w / 2, 30, static_cast<int>(w / 2 - arrowSize * sin(M_PI / 6.0)), static_cast<int>(30 + arrowSize * cos(M_PI / 6.0)));
+    fl_line(w / 2, 30, static_cast<int>(w / 2 + arrowSize * sin(M_PI / 6.0)), static_cast<int>(30 + arrowSize * cos(M_PI / 6.0)));
 
 
     // add "X Axis" and "Y Axis" to the end of x and y axis
     fl_color(FL_BLACK);
     fl_font(FL_HELVETICA_BOLD, 14);
-    fl_draw("X Axis", w - 50, h / 2 + 20);
-    fl_draw("Y Axis", w / 2 + 10, 50);
+    fl_draw("X Axis", w - 50, h / 2 + 40);
+    fl_draw("Y Axis", w / 2 + 10, 30);
 
     // list points on x axis
-    for (int i = 1; i <= 6; i++) {
+    for (int i = 1; i <= w / 100 - 1; i++) {
         int x_pos = w / 2 + i * 50;
         int x_neg = w / 2 - i * 50;
         int y = h / 2;
@@ -120,7 +132,7 @@ void superellipse::draw() {
     }
         
     // list points on y axis
-    for (int i = 1; i <= 4; i++) {
+    for (int i = 1; i <= h / 100 - 1; i++) {
         int x = w / 2;
         int y_pos = h / 2 - i * 50;
         int y_neg = h / 2 + i * 50;
@@ -190,9 +202,18 @@ void superellipse::draw() {
     fl_color(FL_DARK_MAGENTA);
     int x0 = w / 2, y0 = h / 2;
 
-    for (int x = x0 - a; x <= x0 + a; ++x) {
+    double x_prev = x0 - a;
+    double y_prev = abs(pow(1 - abs(pow((x_prev - x0) / a, m)), 1 / n) * b);
+    fl_point(x_prev, y0 + y_prev);
+    fl_point(x_prev, y0 - y_prev);
+
+    for (int x = x0 - a + 1; x <= x0 + a; ++x) {
         double y = abs(pow(1 - abs(pow((x - x0) / a, m)), 1 / n) * b);
         fl_point(x, y0 + y);
         fl_point(x, y0 - y);
+        fl_line(x_prev, y0 + y_prev, x, y0 + y);
+        fl_line(x_prev, y0 - y_prev, x, y0 - y);
+        x_prev = x;
+        y_prev = y;
     }
 }
