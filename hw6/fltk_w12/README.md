@@ -22,6 +22,11 @@
 ### poly类的输入
 **必须在第一行输入指定窗口的大小，即输入width和height**。接下来输入点的坐标，每行输入一个点的坐标，用空格隔开，直至输入完毕。可以按 `Ctrl+D` 结束输入。
 
+## 异常说明
+superellipse类在遇到输入异常的时候会抛出对应的runtime_error异常，然后在`main.cpp`中进行捕捉并且输出。
+
+poly类在遇到输入异常或者输入的点集无法构成多边形的情况时，会将私有变量`valid`置为`false`，并且在`main.cpp`通过`isValid()`接口来判断当前实例是否合法，如果不合法的话通过标准输出流报错。
+
 ## 运行说明
 本地的电脑类型是MacOS Sonoma M1。通过`brew install fltk`，安装fltk至`/opt/homebrew/Cellar/fltk`路径下。通过`chmod +x ./run.sh && ./run.sh`运行该脚本，可以得到目标输出。运行前请务必切换至当前文件夹，即`/fltk_w12`。
 
