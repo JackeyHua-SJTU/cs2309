@@ -11,8 +11,8 @@ private:
     bool valid;
 
     bool isValidPoly(std::pair<double, double> p1, std::pair<double, double> p2, std::pair<double, double> q1, std::pair<double, double> q2);
-
-    bool isLine();
+    
+    // bool isLine();
 
 public:
     poly(std::vector<std::pair<double, double>> vc, int width, int height);

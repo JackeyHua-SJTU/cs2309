@@ -85,16 +85,16 @@ void superellipse::valid() {
 void superellipse::draw() {
     Fl_Window::draw();
 
-    // 获取窗口的宽度和高度
+    // get window width and height
     int w = this->w();
     int h = this->h();
 
-    // 绘制坐标轴
+    // draw x and y axis at the center of the window
     fl_color(FL_BLACK);
     fl_line(50, h / 2, w - 50, h / 2);  // x轴
     fl_line(w / 2, 50, w / 2, h - 50);  // y轴
 
-    // 绘制轴箭头
+    // draw arrow on the end of x and y axis
     int arrowSize = 10;
     fl_line(w - 50, h / 2, static_cast<int>(w - 50 - arrowSize * cos(M_PI / 6.0)), static_cast<int>(h / 2 - arrowSize * sin(M_PI / 6.0)));
     fl_line(w - 50, h / 2, static_cast<int>(w - 50 - arrowSize * cos(M_PI / 6.0)), static_cast<int>(h / 2 + arrowSize * sin(M_PI / 6.0)));
@@ -102,13 +102,13 @@ void superellipse::draw() {
     fl_line(w / 2, 50, static_cast<int>(w / 2 + arrowSize * sin(M_PI / 6.0)), static_cast<int>(50 + arrowSize * cos(M_PI / 6.0)));
 
 
-    // 绘制轴名称
+    // add "X Axis" and "Y Axis" to the end of x and y axis
     fl_color(FL_BLACK);
     fl_font(FL_HELVETICA_BOLD, 14);
     fl_draw("X Axis", w - 50, h / 2 + 20);
     fl_draw("Y Axis", w / 2 + 10, 50);
 
-    // 在x轴上标注点
+    // list points on x axis
     for (int i = 1; i <= 6; i++) {
         int x_pos = w / 2 + i * 50;
         int x_neg = w / 2 - i * 50;
@@ -119,7 +119,7 @@ void superellipse::draw() {
         fl_draw(std::to_string(i * 50).c_str(), x_neg - 5, y - 15);
     }
         
-    // 在y轴上标注点
+    // list points on y axis
     for (int i = 1; i <= 4; i++) {
         int x = w / 2;
         int y_pos = h / 2 - i * 50;
@@ -130,15 +130,17 @@ void superellipse::draw() {
         fl_draw(std::to_string(i * 50).c_str(), x - 25, y_neg + 5);
     }
 
+    // draw all points in red
     for (auto&& [x, y] : this->points) {
         fl_color(FL_RED);
         // fltk中y坐标越往下越大，越往上越小
         // 因此为了以正常的坐标系画出图形，需要反过来处理
         fl_circle(x + w / 2, -y + h / 2, 2);
     }
+
     // if k == N - 1, complete graph
     // else connects to random selected k points
-
+    // ! All Lines here are directed
     if (this->k == this->N - 1) {
         for (int i = 0; i < this->points.size(); ++i) {
             for (int j = i + 1; j < this->points.size(); ++j) {
@@ -157,10 +159,11 @@ void superellipse::draw() {
             }
         }
     } else {
+        // random select k different indexs in [0, N - 1] except itself
         int lowerbound = 0, upperbound = this->N - 1;
-        std::random_device rd;  // 随机设备
-        std::mt19937 gen(rd());  // 随机数生成器
-        std::uniform_int_distribution<int> dist(lowerbound, upperbound);  // 均匀整数分布
+        std::random_device rd;  
+        std::mt19937 gen(rd());  
+        std::uniform_int_distribution<int> dist(lowerbound, upperbound);  // uniform distribution in [lowerbound, upperbound]
 
         for (int i = 0; i < this->N; ++i) {
             std::set<int> s;
@@ -183,7 +186,7 @@ void superellipse::draw() {
             }
         }
     }
-
+    // draw the superellipse
     fl_color(FL_DARK_MAGENTA);
     int x0 = w / 2, y0 = h / 2;
 

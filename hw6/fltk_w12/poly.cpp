@@ -112,56 +112,63 @@ poly::poly(vector<pair<double, double>> vc, int width, int height) : Fl_Window(w
 void poly::draw() {
     Fl_Window::draw();
 
-    // 获取窗口的宽度和高度
+    // get window width and height
     int w = this->w();
     int h = this->h();
 
-    // 绘制坐标轴
+    // draw x and y axis at the center of the window
     fl_color(FL_BLACK);
-    fl_line(50, h / 2, w - 50, h / 2);  // x轴
-    fl_line(w / 2, 50, w / 2, h - 50);  // y轴
+    fl_line(50, h / 2, w - 50, h / 2);  // x axis
+    fl_line(w / 2, 50, w / 2, h - 50);  // y axis
 
-    // 绘制轴箭头
+    // draw arrow on the postive end of x and y axis
     int arrowSize = 10;
     fl_line(w - 50, h / 2, static_cast<int>(w - 50 - arrowSize * cos(M_PI / 6.0)), static_cast<int>(h / 2 - arrowSize * sin(M_PI / 6.0)));
     fl_line(w - 50, h / 2, static_cast<int>(w - 50 - arrowSize * cos(M_PI / 6.0)), static_cast<int>(h / 2 + arrowSize * sin(M_PI / 6.0)));
     fl_line(w / 2, 50, static_cast<int>(w / 2 - arrowSize * sin(M_PI / 6.0)), static_cast<int>(50 + arrowSize * cos(M_PI / 6.0)));
     fl_line(w / 2, 50, static_cast<int>(w / 2 + arrowSize * sin(M_PI / 6.0)), static_cast<int>(50 + arrowSize * cos(M_PI / 6.0)));
 
-    // 绘制轴名称
+    // add "X Axis" and "Y Axis" to the end of x and y axis
     fl_color(FL_BLACK);
     fl_font(FL_HELVETICA_BOLD, 14);
     fl_draw("X Axis", w - 50, h / 2 + 20);
     fl_draw("Y Axis", w / 2 + 10, 50);
 
-    // 在x轴上标注点
+    // list points on x axis
     for (int i = 1; i <= 6; i++) {
+        // gap = 50
         int x_pos = w / 2 + i * 50;
         int x_neg = w / 2 - i * 50;
         int y = h / 2;
         fl_circle(x_pos, y, 2);
         fl_circle(x_neg, y, 2);
+        // change std::string to char*
         fl_draw(std::to_string(i * 50).c_str(), x_pos - 5, y + 15);
         fl_draw(std::to_string(i * 50).c_str(), x_neg - 5, y - 15);
     }
         
-    // 在y轴上标注点
+    // list points on y axis
     for (int i = 1; i <= 4; i++) {
         int x = w / 2;
         int y_pos = h / 2 - i * 50;
         int y_neg = h / 2 + i * 50;
         fl_circle(x, y_pos, 2);
         fl_circle(x, y_neg, 2);
+        // change std::string to char*
         fl_draw(std::to_string(i * 50).c_str(), x - 25, y_pos + 5);
         fl_draw(std::to_string(i * 50).c_str(), x - 25, y_neg + 5);
     }
 
+    // draw all points in red
     for (auto&& [x, y] : this->points) {
         fl_color(FL_RED);
+        // fl_point only draws a single pixel, which is not easy to see
+        // use fl_circle instead
         fl_circle(x + w / 2, -y + h / 2, 2);
     }
 
-    for (int i = 0;i < this->points.size(); ++i) {
+    // draw line between adjacent points
+    for (int i = 0; i < this->points.size(); ++i) {
         fl_line(this->points[i].first + w / 2, -this->points[i].second + h / 2, this->points[(i + 1) % this->points.size()].first + w / 2, -this->points[(i + 1) % this->points.size()].second + h / 2);
     }
 
