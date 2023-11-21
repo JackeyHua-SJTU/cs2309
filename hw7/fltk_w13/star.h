@@ -1,5 +1,5 @@
-#ifndef _BINARY_TREE_H_
-#define _BINARY_TREE_H_
+#ifndef _STAR_H_
+#define _STAR_H_
 
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
