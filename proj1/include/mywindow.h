@@ -9,15 +9,13 @@
 #include <vector>
 #include <polygon.h>
 
-extern std::vector<std::pair<double, double>> points;
-extern bool click1;
-extern bool click2;
-
 class mywindow : public Fl_Window {
 private:
-    Polygon poly;
+    Polygon poly;   // vector of points is in poly (poly.points)
     double area;
     double scale;   // 假设比例尺是基于100米
+    bool click1;    // 是否点击了第一个按钮
+    bool click2;    // 是否点击了第二个按钮
 
 public:
     mywindow(int width, int height, const char* title);
@@ -28,9 +26,17 @@ public:
 
     auto getVc();
 
+    void pop_back_vc();
+
+    void clear_vc();
+
     void initPoly();
 
     void setScale(double scale);
+
+    void click_button_1();
+
+    void click_button_2();
 
 };
 

@@ -3,25 +3,34 @@
 #include <iostream>
 #include <cmath>
 
-auto points = std::vector<std::pair<double, double>>();
-bool click1 = false;
-bool click2 = false;
 
 mywindow::mywindow(int width, int height, const char *title) : Fl_Window(width, height, title) {
     resizable(this);
     this->area = 0.0;
     this->scale = 0.0;
+    this->click1 = false;
+    this->click2 = false;
+}
+
+void mywindow::click_button_1() {
+    this->click1 = true;
+    return ;
+}
+
+void mywindow::click_button_2() {
+    this->click2 = true;
+    return ;
 }
 
 int mywindow::handle(int event)  {
     if (event == FL_PUSH) {
-        int x = Fl::event_x();  // 获取鼠标点击的横坐标
-        int y = Fl::event_y();  // 获取鼠标点击的纵坐标
-        points.emplace_back(x, y);  // 将点击坐标保存到容器中
-        std::cout << "current size is " << points.size() << std::endl;
-        // 在控制台输出点击坐标
+        int x = Fl::event_x();  // x axis clicked by mouse
+        int y = Fl::event_y();  // y axis clicked by mouse
+        this->poly.points.emplace_back(x, y);  // store it into vector
+        std::cout << "current size is " << this->poly.points.size() << std::endl;
+        // print coordinates to console
         printf("点击坐标：(%d, %d)\n", x, y);
-        redraw();  // 重绘窗口
+        this->redraw();  // 重绘窗口
     }
     return Fl_Window::handle(event);
 }
@@ -71,7 +80,7 @@ void mywindow::draw() {
     }
 
     // 绘制所有点击坐标
-    for (auto&& point : points) {
+    for (auto&& point : this->poly.points) {
         fl_color(FL_RED);  // 设置绘制颜色
         fl_circle(point.first, point.second, 2);  // 绘制点
     }
@@ -84,17 +93,18 @@ void mywindow::draw() {
 
     if (click2) {
         fl_color(FL_RED);
-        int size = points.size();
+        int size = this->poly.points.size();
+        auto points = this->poly.points;
         for (int i = 0; i < size; ++i) {
             fl_line(points[i].first, points[i].second, points[(i + 1) % size].first, points[(i + 1) % size].second);
         }
+        // TODO: Add fill color
         std::string s = "area is " + std::to_string(this->area);
         fl_draw(s.c_str(), 30, 450);
     }
 }
 
 void mywindow::initPoly() {
-    poly = Polygon(points);
     poly.sort();
     auto size = poly.area();
     this->area = size;
@@ -109,16 +119,25 @@ void mywindow::setScale(double scale) {
     this->scale = scale;
 }
 
+void mywindow::pop_back_vc() {
+    this->poly.points.pop_back();
+}
+
+void mywindow::clear_vc() {
+    this->poly.points.clear();
+}
+
 void button_callback_1(Fl_Widget* w, void* data) {
-    std::cout << "button_callback_1 " << points.size() <<  std::endl;  // 输出调试信息
+    // std::cout << "button_callback_1 " << this->poly.points.size() <<  std::endl;  // 输出调试信息
     auto win = (mywindow*)data;
 //    fl_line(points[0].first, points[0].second, points[1].first, points[1].second);
 //    win->redraw();
-    click1 = true;
+    win->click_button_1();
+    auto points = win->getVc();
     auto p1 = points[0];
     auto p2 = points[1];
     win->setScale(sqrt(pow(p1.first - p2.first, 2) + pow(p1.second - p2.second, 2)) / 100);
-    points.clear();
+    win->clear_vc();
     std::cout << "button_callback_1 " << points.size() <<  std::endl;
     w->hide();
     win->redraw();
@@ -127,14 +146,14 @@ void button_callback_1(Fl_Widget* w, void* data) {
 void button_callback_2(Fl_Widget* w, void* data) {
     std::cout << "button_callback_2" << std::endl;  // 输出调试信息
     auto win = (mywindow*)data;
-    std::cout << "button_callback_2 " << points.size() <<  std::endl;
-    points.pop_back();
-    std::cout << "button_callback_2 " << points.size() <<  std::endl;
+    // std::cout << "button_callback_2 " << points.size() <<  std::endl;
+    win->pop_back_vc();
     win->initPoly();
-    points = win->getVc();
+    // std::cout << "button_callback_2 " << points.size() <<  std::endl;
+    auto points = win->getVc();
     int size = points.size();
     std::cout << "current size is " << size << std::endl;
-    click2 = true;
+    win->click_button_2();
     // std::string s = "area is " + std::to_string(ans);
 
     // auto box = new Fl_Box(30, 300, 250, 50, s.c_str());
