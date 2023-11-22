@@ -98,7 +98,14 @@ void mywindow::draw() {
         for (int i = 0; i < size; ++i) {
             fl_line(points[i].first, points[i].second, points[(i + 1) % size].first, points[(i + 1) % size].second);
         }
-        // TODO: Add fill color
+        // TODO: Use Sutherland Hodgman algo to draw parallel line inside polygon
+
+        fl_begin_polygon();
+        for (auto&& point : points) {
+            fl_vertex(point.first, point.second);
+        }
+        fl_end_polygon();
+
         std::string s = "area is " + std::to_string(this->area);
         fl_draw(s.c_str(), 30, 450);
     }
