@@ -1,6 +1,6 @@
 #include "picwindow.h"
 #include <FL/Fl.H>
-#include <OpenGL/gl.h>
+#include <GL/gl.h>
 #include <FL/glut.H>
 #include <FL/Fl_Button.H>
 #include <iostream>

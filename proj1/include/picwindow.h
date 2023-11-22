@@ -2,7 +2,7 @@
 #define _PICWINDOW_H_
 
 #include <FL/Fl.H>
-#include <OpenGL/gl.h>
+#include <GL/gl.h>
 #include <FL/Fl_Gl_Window.H>
 #include <FL/Fl_Button.H>
 #include "polygon.h"
