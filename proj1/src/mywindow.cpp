@@ -23,7 +23,7 @@ void mywindow::click_button_2() {
 }
 
 int mywindow::handle(int event)  {
-    if (event == FL_PUSH) {
+    if (!this->click2 && event == FL_PUSH) {
         int x = Fl::event_x();  // x axis clicked by mouse
         int y = Fl::event_y();  // y axis clicked by mouse
         this->poly.points.emplace_back(x, y);  // store it into vector
@@ -59,10 +59,10 @@ void mywindow::draw() {
     fl_color(FL_BLACK);
     fl_font(FL_HELVETICA_BOLD, 14);
     fl_draw("X Axis", w - 50, h - 30);
-    fl_draw("Y Axis", 310, 50);
+    fl_draw("Y Axis", 250, 50);
 
     // 在x轴上标注点
-    for (int i = 1; i <= 16; i++) {
+    for (int i = 1; i <= w / 50 - 8; i++) {
         int x_pos = 300 + i * 50;
         int y = h - 50;
         fl_circle(x_pos, y, 2);
@@ -70,7 +70,7 @@ void mywindow::draw() {
     }
 
     // 在y轴上标注点
-    for (int i = 1; i <= 13; i++) {
+    for (int i = 1; i <= h / 50 - 3; i++) {
         int x = 300;
         int y_pos = h - 50 - i * 50;
         fl_circle(x, y_pos, 2);
@@ -87,8 +87,8 @@ void mywindow::draw() {
 
     if (click1) {
         fl_color(FL_RED);
-        std::string s1 = "1 meter in real world equals to \n" + std::to_string(this->scale) + " pixels/units in the window";
-        fl_draw(s1.c_str(), 30, 300);
+        std::string s1 = "scale: " + std::to_string(this->scale) + " pixels/meter";
+        fl_draw(s1.c_str(), 30, h * 3 / 5);
     }
 
     if (click2) {
@@ -106,8 +106,8 @@ void mywindow::draw() {
         fl_end_polygon();
 
         fl_color(FL_RED);
-        std::string s = "area is " + std::to_string(this->area);
-        fl_draw(s.c_str(), 30, 450);
+        std::string s = "area: " + std::to_string(this->area);
+        fl_draw(s.c_str(), 30, h * 4 / 5);
     }
 }
 
