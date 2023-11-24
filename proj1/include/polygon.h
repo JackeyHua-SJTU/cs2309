@@ -1,5 +1,5 @@
-#ifndef POLYGON_HPP_
-#define POLYGON_HPP_
+#ifndef _POLYGON_H_
+#define _POLYGON_H_
 
 #include <vector>
 
