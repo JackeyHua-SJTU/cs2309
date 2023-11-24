@@ -1,7 +1,10 @@
 #include "mywindow.h"
 #include <string>
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 #include <cmath>
+#include <FL/Fl_Input.H>
 
 
 mywindow::mywindow(int width, int height, const char *title) : Fl_Window(width, height, title) {
@@ -10,6 +13,7 @@ mywindow::mywindow(int width, int height, const char *title) : Fl_Window(width, 
     this->scale = 0.0;
     this->click1 = false;
     this->click2 = false;
+    this->input = false;
 }
 
 void mywindow::click_button_1() {
@@ -26,7 +30,9 @@ int mywindow::handle(int event)  {
     if (!this->click2 && event == FL_PUSH) {
         int x = Fl::event_x();  // x axis clicked by mouse
         int y = Fl::event_y();  // y axis clicked by mouse
-        this->poly.points.emplace_back(x, y);  // store it into vector
+        if (this->input) {
+            this->poly.points.emplace_back(x, y);  // store it into vector
+        }
         std::cout << "current size is " << this->poly.points.size() << std::endl;
         // print coordinates to console
         printf("点击坐标：(%d, %d)\n", x, y);
@@ -106,8 +112,17 @@ void mywindow::draw() {
         fl_end_polygon();
 
         fl_color(FL_RED);
-        std::string s = "area: " + std::to_string(this->area);
-        fl_draw(s.c_str(), 30, h * 4 / 5);
+        std::ostringstream oss;
+        // rounding and scientific notation
+        oss << std::scientific << std::setprecision(6) << this->area;
+        std::string s1 = "pixel area: " + oss.str();
+        fl_draw(s1.c_str(), 30, h * 4 / 5);
+
+        fl_color(FL_RED);
+        std::ostringstream oss2;
+        oss2 << std::scientific << std::setprecision(6) << this->area * this->scale * this->scale;
+        std::string s2 = "real area: " + oss2.str();
+        fl_draw(s2.c_str(), 30, h * 6 / 7);
     }
 }
 
@@ -132,6 +147,11 @@ void mywindow::pop_back_vc() {
 
 void mywindow::clear_vc() {
     this->poly.points.clear();
+}
+
+void mywindow::finish_input() {
+    this->input = true;
+    return ;
 }
 
 void button_callback_1(Fl_Widget* w, void* data) {
@@ -166,4 +186,17 @@ void button_callback_2(Fl_Widget* w, void* data) {
     // auto box = new Fl_Box(30, 300, 250, 50, s.c_str());
 
     win->redraw();
+}
+
+// todo: parse input
+
+void input_callback(Fl_Widget* widget, void* data) {
+    auto pack = static_cast<callbackPack*>(data);
+    auto input = pack->input;
+    auto win = pack->window;
+    const char* value = input->value();
+    win->finish_input();
+    input->hide();
+    widget->hide();
+    std::cout << "User input: " << value << std::endl;
 }
