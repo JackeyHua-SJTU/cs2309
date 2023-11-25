@@ -188,13 +188,16 @@ void button_callback_2(Fl_Widget* w, void* data) {
     win->redraw();
 }
 
-// todo: parse input
 
 void input_callback(Fl_Widget* widget, void* data) {
     auto pack = static_cast<callbackPack*>(data);
     auto input = pack->input;
     auto win = pack->window;
     const char* value = input->value();
+    // std::cout << "input_callback " << value << " " << sizeof(value) << std::endl;
+    std::string str;
+    str.assign(value);
+    win->setScale(std::stod(str));
     win->finish_input();
     input->hide();
     widget->hide();

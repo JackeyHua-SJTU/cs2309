@@ -19,7 +19,10 @@ int main() {
     int w = image.w();
     int h = image.h();
     mywindow window(w + 400, h + 100, "main");
-    std::cout << "w = " << w << " h = " << h << std::endl;
+    // std::cout << "w = " << w << " h = " << h << std::endl;
+    std::cout << "type 0 if you want to assign scale via typing in GUI, type 1 if you want to assign scale via clicking in GUI" << std::endl;
+    int type;
+    std::cin >> type;
 
     Fl_Box box(340, 25, w, h);
     box.image(&image);  // 复制图片以防止被释放
@@ -30,6 +33,15 @@ int main() {
 
     Fl_Button button1(30, h / 5, 200, 50, "click me after \nselecting plotting scale");
     button1.callback(button_callback_1, &window);
+
+    if (!type) {
+        button1.hide();
+    } else {
+        window.finish_input();
+        input.hide();
+        button.hide();
+    }
+    
     Fl_Button button2(30, h * 2 / 5, 200, 50, "click me after \nselecting edge points");
     button2.callback(button_callback_2, &window);
    // 设置控件的大小
