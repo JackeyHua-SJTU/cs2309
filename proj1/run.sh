@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 cd src
-g++ -c mywindow.cpp polygon.cpp -I ../include -I /opt/homebrew/Cellar/fltk/1.3.8_1/include -std=c++20
+g++ -c mywindow.cpp polygon.cpp windemo.cpp -I ../include -I /opt/homebrew/Cellar/fltk/1.3.8_1/include -std=c++20
 ar rcs libmy.a *.o
 rm *.o
 
