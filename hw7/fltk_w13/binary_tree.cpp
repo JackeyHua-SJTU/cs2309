@@ -7,32 +7,33 @@ binary_tree::binary_tree(int level, int width, int height) {
     this->width = width;
     this->height = height;
 
-    int w = width / ((1 << level) + 1);
-    int h = height / (level + 1);
+    double w = width / ((1 << (level - 1)) + 2.0);
+    double h = height / (level + 0.3);
 
-    add(Point(width / 2, 10));
+    // add(Point(width / 2, h / 5));
 
     for (int i = 1; i <= level; ++i) {
-        int s = 1 << i;
+        int s = 1 << (i - 1);
         for (int j = 0; j < s; ++j) {
-            add(Point(width / 2 - w / 2 * (s - 1) + j * w, i * h + 1));
+            add(Point(width / 2.0 - w / 2.0 * (s - 1) + j * w, (i - 1.0) * h + h / 4.0));
         }
     }
 }
 
 void binary_tree::draw_lines() const {
-    int num = (level == 0) ? 1 : (1 << level) - 1;
+    if (this->level == 0) {
+        return;
+    }
     
-    for (int i = 0; i < (1 << (level + 1)) - 1; ++i) {
+    for (int i = 0; i < (1 << level) - 1; ++i) {
         fl_circle(point(i).x, point(i).y, 2);
     }
 
-    for (int i = 0; i < num; ++i) {
+    for (int i = 0; i < (1 << (level - 1)) - 1; ++i) {
         fl_color(FL_RED);
         fl_line(point(i).x, point(i).y, point(2 * i + 1).x, point(2 * i + 1).y);
         fl_line(point(i).x, point(i).y, point(2 * i + 2).x, point(2 * i + 2).y);
     }
-    
 }
 
 
