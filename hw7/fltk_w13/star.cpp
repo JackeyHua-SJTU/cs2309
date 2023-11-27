@@ -4,7 +4,7 @@
 #include <cmath>
 #include <FL/fl_draw.H>
 
-star::star(int num, int width, int height) : Fl_Window(width, height) {
+star::star(int num, int width, int height, const char* s) : Fl_Window(width, height, s) {
     this->number = num;
     resizable(this);
 }
@@ -21,7 +21,7 @@ void star::draw() {
     
     int w = this->w();
     int h = this->h();
-    double radius_large = (w > h) ? h / 3 : w / 3;
+    double radius_large = (w > h) ? h / 3.0 : w / 3.0;
     double unit_angle = 2 * M_PI / this->number;
     double radius_small = radius_large / (2 * cos(unit_angle / 2));
 

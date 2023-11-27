@@ -9,7 +9,7 @@ class star : public Fl_Window {
         int number;
 
     public: 
-        star(int num, int width, int height);
+        star(int num, int width, int height, const char* title = 0);
         void valid();
         void draw();
 }; 
