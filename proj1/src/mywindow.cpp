@@ -7,13 +7,14 @@
 #include <FL/Fl_Input.H>
 
 
-mywindow::mywindow(int width, int height, const char *title) : Fl_Window(width, height, title) {
+mywindow::mywindow(int width, int height, double base, const char *title) : Fl_Window(width, height, title) {
     resizable(this);
     this->area = 0.0;
     this->scale = 0.0;
     this->click1 = false;
     this->click2 = false;
     this->input = false;
+    this->base = base;
 }
 
 void mywindow::click_button_1() {
@@ -112,15 +113,47 @@ void mywindow::draw() {
         fl_end_polygon();
 
         fl_color(FL_RED);
+
+        auto f = [](double x) {
+            int a = static_cast<int>(x);
+            int cnt = 0;
+            while (a) {
+                a /= 10;
+                ++cnt;
+            }
+            return cnt;
+        };
+
         std::ostringstream oss;
+
+        int cnt1 = f(this->area);
+        int cnt2 = f(this->area / (this->scale * this->scale));
+        bool flag1 = (cnt1 == -1);
+        bool flag2 = (cnt2 == -1);
+        double a1 = this->area;
+        if (!flag1) {
+            a1 /= pow(10, cnt1 - 1);
+        }
+        a1 = static_cast<int>(a1 * pow(10, 5 + flag1) + 0.5) / pow(10, 5 + flag1);
+        if (flag1) {
+            a1 *= 10;
+        }
+        double a2 = this->area / (this->scale * this->scale);
+        if (!flag2) {
+            a2 /= pow(10, cnt2 - 1);
+        }
+        a2 = static_cast<int>(a2 * pow(10, 5 + flag2) + 0.5) / pow(10, 5 + flag2);
+        if (flag2) {
+            a2 *= 10;
+        }
         // rounding and scientific notation
-        oss << std::scientific << std::setprecision(6) << this->area;
+        oss << std::fixed << std::setprecision(5) << a1 << "*10^" << cnt1 - 1;
         std::string s1 = "pixel area: " + oss.str();
         fl_draw(s1.c_str(), 30, h * 4 / 5);
 
         fl_color(FL_RED);
         std::ostringstream oss2;
-        oss2 << std::scientific << std::setprecision(6) << this->area * this->scale * this->scale;
+        oss2 << std::fixed << std::setprecision(5) << a2 << "*10^" << cnt2 - 1 << " m^2";
         std::string s2 = "real area: " + oss2.str();
         fl_draw(s2.c_str(), 30, h * 6 / 7);
     }
@@ -154,16 +187,21 @@ void mywindow::finish_input() {
     return ;
 }
 
+double mywindow::getBase() {
+    return this->base;
+}
+
 void button_callback_1(Fl_Widget* w, void* data) {
     // std::cout << "button_callback_1 " << this->poly.points.size() <<  std::endl;  // 输出调试信息
     auto win = (mywindow*)data;
 //    fl_line(points[0].first, points[0].second, points[1].first, points[1].second);
 //    win->redraw();
     win->click_button_1();
+    auto base = win->getBase();
     auto points = win->getVc();
     auto p1 = points[0];
     auto p2 = points[1];
-    win->setScale(sqrt(pow(p1.first - p2.first, 2) + pow(p1.second - p2.second, 2)) / 100);
+    win->setScale(sqrt(pow(p1.first - p2.first, 2) + pow(p1.second - p2.second, 2)) / base);
     win->clear_vc();
     std::cout << "button_callback_1 " << points.size() <<  std::endl;
     w->hide();

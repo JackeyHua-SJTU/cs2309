@@ -2,11 +2,12 @@
 #include <FL/fl_draw.H>
 #include <string>
 #include <iomanip>
+#include <cmath>
 #include <sstream>
 
 windemo::windemo(int width, int height, std::vector<std::pair<double, double>> vc, double scale, const char* title) : Fl_Window(width, height, title) {
     this->poly = Polygon(std::move(vc));
-    this->poly.sort();
+    // this->poly.sort();
     this->area = this->poly.area();
     this->scale = scale;
 }
@@ -74,14 +75,48 @@ void windemo::draw() {
     fl_end_polygon();
 
     fl_color(FL_RED);
+
+    auto f = [](double x) {
+        if (x > 0 && x < 1) {
+            return -1;
+        }
+        int a = static_cast<int>(x);
+        int cnt = 0;
+        while (a) {
+            a /= 10;
+            ++cnt;
+        }
+        return cnt;
+    };
+
     std::ostringstream oss;
-    oss << std::scientific << std::setprecision(6) << this->area;
+    int cnt1 = f(this->area);
+    int cnt2 = f(this->area / (this->scale * this->scale));
+    bool flag1 = (cnt1 == -1);
+    bool flag2 = (cnt2 == -1);
+    double a1 = this->area;
+    if (!flag1) {
+        a1 /= pow(10, cnt1 - 1);
+    }
+    a1 = static_cast<int>(a1 * pow(10, 5 + flag1) + 0.5) / pow(10, 5 + flag1);
+    if (flag1) {
+        a1 *= 10;
+    }
+    double a2 = this->area / (this->scale * this->scale);
+    if (!flag2) {
+        a2 /= pow(10, cnt2 - 1);
+    }
+    a2 = static_cast<int>(a2 * pow(10, 5 + flag2) + 0.5) / pow(10, 5 + flag2);
+    if (flag2) {
+        a2 *= 10;
+    }
+    oss << std::fixed << std::setprecision(5) << a1 << "*10^" << cnt1 - 1; 
     std::string s1 = "pixel area: " + oss.str();
     fl_draw(s1.c_str(), 30, h / 3);
 
     fl_color(FL_RED);
     std::ostringstream oss2;
-    oss2 << std::scientific << std::setprecision(6) << this->area * this->scale * this->scale;
+    oss2 << std::fixed << std::setprecision(5) << a2 << "*10^" << cnt2 - 1 << " m^2";
     std::string s2 = "real area: " + oss2.str();
     fl_draw(s2.c_str(), 30, h * 2 / 3);
 }
