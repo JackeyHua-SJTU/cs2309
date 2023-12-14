@@ -19,15 +19,18 @@ private:
     bool click1;    // 是否点击了第一个按钮
     bool click2;    // 是否点击了第二个按钮
     bool input;    // 是否输入了比例尺
+    double base;    // 用于表示比例尺是基于多少米
 
 public:
-    mywindow(int width, int height, const char* title);
+    mywindow(int width, int height, double base, const char* title);
 
     int handle(int event) override;
 
     void draw() override;
 
     auto getVc();
+
+    double getBase();
 
     void pop_back_vc();
 
