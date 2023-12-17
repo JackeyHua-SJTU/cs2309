@@ -2,6 +2,7 @@
 #define _POLY_H_
 
 #include <vector>
+#include <set>
 
 class poly {
     private:
@@ -13,8 +14,8 @@ class poly {
         poly(std::vector<std::pair<double, double>> vc);
         bool inside(std::pair<double, double> p);
         std::vector<std::pair<double, double>> visible(std::pair<double, double> src);
-        std::vector<std::pair<double, double>> intersect(std::pair<double, double> src, std::pair<double, double> dst);
-        bool is_line_intersection(std::pair<double, double> l1_src, std::pair<double, double> l1_dst, std::pair<double, double> l2_src, std::pair<double, double> l2_dst);
+        std::set<std::pair<double, double>> intersect(std::pair<double, double> src, std::pair<double, double> dst);
+        int is_line_intersection(std::pair<double, double> l1_src, std::pair<double, double> l1_dst, std::pair<double, double> l2_src, std::pair<double, double> l2_dst);
 };
 
 #endif
