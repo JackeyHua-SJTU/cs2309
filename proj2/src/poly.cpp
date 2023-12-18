@@ -1,4 +1,5 @@
 #include "poly.h"
+#include <algorithm>
 
 poly::poly(std::vector<std::pair<double, double>> vc) : points(vc), min_x(INT_MAX), max_x(INT_MIN), min_y(INT_MAX), max_y(INT_MIN) {
     for (auto&& [x, y] : this->points) {
@@ -7,6 +8,11 @@ poly::poly(std::vector<std::pair<double, double>> vc) : points(vc), min_x(INT_MA
         min_y = std::min(min_y, y);
         max_y = std::max(max_y, y);
     }
+}
+
+//* cross product of two vectors
+double poly::cross(std::vector<double> v1, std::vector<double> v2) {
+    return v1[0] * v2[1] - v1[1] * v2[0];
 }
 
 //* return 1 if regular intersection, -2 if irregular intersection (parallel)
@@ -66,6 +72,34 @@ int poly::is_line_intersection(std::pair<double, double> l1_src, std::pair<doubl
     return 0;
 }
 
+//* return the intersection point of two lines
+//* return (INT_MAX, INT_MAX) if no intersection, parrallel intersection
+std::pair<double, double> poly::get_intersection(std::pair<double, double> l1_src, std::pair<double, double> l1_dst, std::pair<double, double> l2_src, std::pair<double, double> l2_dst) {
+    int intersection = is_line_intersection(l1_src, l1_dst, l2_src, l2_dst);
+    if (intersection == 0 || intersection == -2) {
+        return std::make_pair(INT_MAX, INT_MAX);
+    }
+    if (intersection == 1) {
+        std::vector<double> l1 = {l1_dst.first - l1_src.first, l1_dst.second - l1_src.second};
+        std::vector<double> l1_src_to_l2_src = {l2_src.first - l1_src.first, l2_src.second - l1_src.second};
+        std::vector<double> l1_src_to_l2_dst = {l2_dst.first - l1_src.first, l2_dst.second - l1_src.second};
+        auto lambda = abs(cross(l1_src_to_l2_src, l1) / cross(l1, l1_src_to_l2_dst));
+        return std::make_pair(l2_src.first + lambda * (l2_dst.first - l2_src.first) / (1 + lambda),
+                                l2_src.second + lambda * (l2_dst.second - l2_src.second) / (1 + lambda));
+    } else if (intersection == -1) {
+        if (is_on_line(l2_src, l1_src, l1_dst) == 1) {
+            return l2_src;
+        } else if (is_on_line(l2_dst, l1_src, l1_dst) == 1) {
+            return l2_dst;
+        } else if (is_on_line(l1_src, l2_src, l2_dst) == 1) {
+            return l1_src;
+        } else if (is_on_line(l1_dst, l2_src, l2_dst) == 1) {
+            return l1_dst;
+        }
+    }
+    return std::make_pair(INT_MAX, INT_MAX);
+}
+
 //* return 1 if p is on the segment, 0 if not, -1 if on the extension of the segment
 int poly::is_on_line(std::pair<double, double> p, std::pair<double, double> l_src, std::pair<double, double> l_dst) {
     const double eps = 1e-6;
@@ -116,7 +150,77 @@ bool poly::inside(std::pair<double, double> p) {
     return (cnt % 2);
 }
 
+bool poly::inside(std::pair<double, double> src, std::pair<double, double> dst) {
+    if (!inside(src) || !inside(dst)) {
+        return false;
+    }
+    if (src == dst) {
+        return false;
+    }
+    int size = points.size();
+    int x_dir = (dst.first >= src.first) ? 1 : -1;
+    int y_dir = (dst.second >= src.second) ? 1 : -1;
+    std::vector<std::pair<double, double>> intersect_points;
+    intersect_points.push_back(src);
+    intersect_points.push_back(dst);
+    for (int i = 0; i < size; ++i) {
+        auto cur = points[i];
+        auto next = points[(i + 1) % size];
+        int intersection = is_line_intersection(src, dst, cur, next);
+        if (intersection == 1 || intersection == -1) {
+            intersect_points.push_back(get_intersection(src, dst, cur, next));
+        } else if (intersection == 0) {
+            continue;
+        } else {
+            if (is_on_line(cur, src, dst) == 1) {
+                intersect_points.push_back(cur);
+            }
+            if (is_on_line(next, src, dst) == 1) {
+                intersect_points.push_back(next);
+            }
+        }
+    }
+    auto f = [x_dir, y_dir](std::pair<double, double> p1, std::pair<double, double> p2) {
+        if (x_dir == 1 && y_dir == 1) {
+            if (p1.first != p2.first) {
+                return (p1.first < p2.first);
+            } else {
+                return (p1.second < p2.second);
+            }
+        } else if (x_dir == 1 && y_dir == -1) {
+            if (p1.first != p2.first) {
+                return (p1.first < p2.first);
+            } else {
+                return (p1.second > p2.second);
+            }
+        } else if (x_dir == -1 && y_dir == 1) {
+            if (p1.first != p2.first) {
+                return (p1.first > p2.first);
+            } else {
+                return (p1.second < p2.second);
+            }
+        } else if (x_dir == -1 && y_dir == -1) {
+            if (p1.first != p2.first) {
+                return (p1.first > p2.first);
+            } else {
+                return (p1.second > p2.second);
+            }
+        }
+    };
+    std::sort(intersect_points.begin(), intersect_points.end(), f);
+    auto prev = intersect_points[0];
+    for (int i = 1; i < intersect_points.size(); ++i) {
+        auto cur = intersect_points[i];
+        if (!inside({(prev.first + cur.first) / 2.0, (prev.second + cur.second) / 2.0})) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // TODO: verify the correctness of this function
+// ! especially when we select the vertex
+//* return the intersection points of a line from src to dst with every edge of the polygon
 std::set<std::pair<double, double>> poly::intersect(std::pair<double, double> src, std::pair<double, double> dst) {
     double threshold;
     const double eps = 1e-6;
@@ -189,4 +293,15 @@ std::set<std::pair<double, double>> poly::intersect(std::pair<double, double> sr
     }
     return res;
 
+}
+
+std::set<std::pair<double, double>> poly::visible(std::pair<double, double> src) {
+    std::set<std::pair<double, double>> res;
+    int size = points.size();
+    for (int i = 0; i < size; ++i) {
+        if (inside(src, points[i])) {
+            res.emplace(points[i]);
+        }
+    }
+    return res;
 }
