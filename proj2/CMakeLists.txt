@@ -9,8 +9,8 @@ aux_source_directory(unittest TEST)
 
 list(REMOVE_ITEM SOURCE src/main.cpp)
 
-include_directories(include googletest/googletest/include)
-link_directories(googletest/build/lib)
+include_directories(include googletest/googletest/include /opt/homebrew/Cellar/boost/1.83.0/include/)
+link_directories(googletest/build/lib /opt/homebrew/Cellar/boost/1.83.0/lib)
 
 add_executable(main ${SOURCE} src/main.cpp)
 add_executable(unit_test ${TEST} ${SOURCE})

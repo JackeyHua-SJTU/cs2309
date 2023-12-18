@@ -1,5 +1,13 @@
 #include "poly.h"
 #include <algorithm>
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/geometry/geometries/polygon.hpp>
+
+namespace bg = boost::geometry;
+
+typedef bg::model::d2::point_xy<double> Point;
+typedef bg::model::polygon<Point> Polygon;
 
 poly::poly(std::vector<std::pair<double, double>> vc) : points(vc), min_x(INT_MAX), max_x(INT_MIN), min_y(INT_MAX), max_y(INT_MIN) {
     for (auto&& [x, y] : this->points) {
@@ -303,5 +311,33 @@ std::set<std::pair<double, double>> poly::visible(std::pair<double, double> src)
             res.emplace(points[i]);
         }
     }
+    return res;
+}
+
+std::vector<std::pair<double, double>> poly::polygon_intersect(std::vector<std::pair<double, double>> vc1, std::vector<std::pair<double, double>> vc2) {
+    std::vector<std::pair<double, double>> res;
+    Polygon poly1, poly2;
+
+    std::vector<Point> points1, points2;
+    for (auto&& [x, y] : vc1) {
+        points1.emplace_back(x, y);
+    }
+    for (auto&& [x, y] : vc2) {
+        points2.emplace_back(x, y);
+    }
+
+    bg::assign_points(poly1, points1);
+    bg::assign_points(poly2, points2);
+    bg::correct(poly1);
+    bg::correct(poly2);
+
+    std::vector<Polygon> intersection;
+    bg::intersection(poly1, poly2, intersection);
+    Polygon inter = intersection[0];
+
+    for (auto&& p : inter.outer()) {
+        res.emplace_back(p.x(), p.y());
+    }
+    res.pop_back();
     return res;
 }
