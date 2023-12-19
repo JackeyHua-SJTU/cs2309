@@ -1,4 +1,5 @@
 #include "poly.h"
+#include <unordered_set>
 #include <algorithm>
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
@@ -163,7 +164,7 @@ bool poly::inside(std::pair<double, double> src, std::pair<double, double> dst) 
         return false;
     }
     if (src == dst) {
-        return false;
+        return inside(src);
     }
     int size = points.size();
     int x_dir = (dst.first >= src.first) ? 1 : -1;
@@ -214,6 +215,7 @@ bool poly::inside(std::pair<double, double> src, std::pair<double, double> dst) 
                 return (p1.second > p2.second);
             }
         }
+        return false;
     };
     std::sort(intersect_points.begin(), intersect_points.end(), f);
     auto prev = intersect_points[0];
@@ -226,42 +228,42 @@ bool poly::inside(std::pair<double, double> src, std::pair<double, double> dst) 
     return true;
 }
 
-// TODO: verify the correctness of this function
-// ! especially when we select the vertex
 //* return the intersection points of a line from src to dst with every edge of the polygon
 std::set<std::pair<double, double>> poly::intersect(std::pair<double, double> src, std::pair<double, double> dst) {
     double threshold;
     const double eps = 1e-6;
     std::set<std::pair<double, double>> res;
-    if (src == dst) {
+    if (src == dst || !inside(src) || !inside(dst)) {
         return res;
     }
+    // set the threshold, which means the end point of a "infinite long" segment from src to dst
+    // use the parameter form of a line (l = p1 + t * (p2 - p1)), threshold actually is "t"
     if (src.first == dst.first) {
         if (dst.second > src.second) {
             threshold = (max_y - src.second) / (dst.second - src.second) + 2.0;
         } else {
             threshold = (min_y - src.second) / (dst.second - src.second) + 2.0;
         }
-    } 
-    if (src.second == dst.second) {
+    } else if (src.second == dst.second) {
         if (dst.first > src.first) {
             threshold = (max_x - src.first) / (dst.first - src.first) + 2.0;
         } else {
             threshold = (min_x - src.first) / (dst.first - src.first) + 2.0;
         }
-    }
-    double t_x_max = (max_x - src.first) / (dst.first - src.first) + 2.0;
-    double t_x_min = (min_x - src.first) / (dst.first - src.first) + 2.0;
-    double t_y_max = (max_y - src.second) / (dst.second - src.second) + 2.0;
-    double t_y_min = (min_y - src.second) / (dst.second - src.second) + 2.0;
-    if (src.first < dst.first && src.second < dst.second) {
-        threshold = std::max(t_x_max, t_y_max);
-    } else if (src.first < dst.first && src.second > dst.second) {
-        threshold = std::max(t_x_max, t_y_min);
-    } else if (src.first > dst.first && src.second < dst.second) {
-        threshold = std::max(t_x_min, t_y_max);
-    } else if (src.first > dst.first && src.second > dst.second) {
-        threshold = std::max(t_x_min, t_y_min);
+    } else {
+        double t_x_max = (max_x - src.first) / (dst.first - src.first) + 2.0;
+        double t_x_min = (min_x - src.first) / (dst.first - src.first) + 2.0;
+        double t_y_max = (max_y - src.second) / (dst.second - src.second) + 2.0;
+        double t_y_min = (min_y - src.second) / (dst.second - src.second) + 2.0;
+        if (src.first < dst.first && src.second < dst.second) {
+            threshold = std::max(t_x_max, t_y_max);
+        } else if (src.first < dst.first && src.second > dst.second) {
+            threshold = std::max(t_x_max, t_y_min);
+        } else if (src.first > dst.first && src.second < dst.second) {
+            threshold = std::max(t_x_min, t_y_max);
+        } else if (src.first > dst.first && src.second > dst.second) {
+            threshold = std::max(t_x_min, t_y_min);
+        }
     }
     
     int size = this->points.size();
@@ -271,36 +273,40 @@ std::set<std::pair<double, double>> poly::intersect(std::pair<double, double> sr
         std::pair inf = {src.first + threshold * (dst.first - src.first), src.second + threshold * (dst.second - src.second)};
         auto intersection = is_line_intersection(src, inf, cur, next);
         if (intersection == 1) {
+            // if regular intersection, then the line will be outside the polygon, break it.
             std::vector<double> src_to_dst = {dst.first - src.first, dst.second - src.second};
             std::vector<double> src_to_cur = {cur.first - src.first, cur.second - src.second};
             std::vector<double> src_to_next = {next.first - src.first, next.second - src.second};
             double lambda = abs((src_to_cur[0] * src_to_dst[1] - src_to_cur[1] * src_to_dst[0]) / 
                             (src_to_next[0] * src_to_dst[1] - src_to_next[1] * src_to_dst[0]));
-            res.emplace(cur.first + lambda * (next.first - cur.first) / (1 + lambda), 
-                            cur.second + lambda * (next.second - cur.second) / (1 + lambda));
-        } else if (intersection == -1) {
-            if (is_on_line(cur, src, inf) == 1) {
-                res.emplace(cur);
+            std::pair<double, double> intersection_point = {cur.first + lambda * (next.first - cur.first) / (1 + lambda), 
+                                                            cur.second + lambda * (next.second - cur.second) / (1 + lambda)};
+            if (inside(src, intersection_point)) {
+                res.emplace(intersection_point);
             }
-            if (is_on_line(next, src, inf) == 1) {
-                res.emplace(next);
+        } else if (intersection == -1) {
+            auto intersection_point = get_intersection(src, inf, cur, next);
+            if (inside(src, intersection_point)) {
+                res.emplace(intersection_point);
             }
         } else if (intersection == -2) {
-            std::vector<double> src_to_dst = {dst.first - src.first, dst.second - src.second};
-            std::vector<double> src_to_cur = {cur.first - src.first, cur.second - src.second};
-            std::vector<double> src_to_next = {next.first - src.first, next.second - src.second};
-            int flag_cur = (src_to_cur[0] * src_to_dst[0] + src_to_cur[1] * src_to_dst[1] >= 0) ? 1 : -1;
-            int flag_next = (src_to_next[0] * src_to_dst[0] + src_to_next[1] * src_to_dst[1] >= 0) ? 1 : -1;
-            if (flag_cur * (src_to_cur[0] * src_to_cur[0] + src_to_cur[1] * src_to_cur[1]) < 
-                flag_next * (src_to_next[0] * src_to_next[0] + src_to_next[1] * src_to_next[1])) {
-                res.emplace(next);
-            } else {
-                res.emplace(cur);
+            // count the "t" of cur and next, if greater than 1, then check inside.
+            // if inside, we can push it into the set
+            double t_cur = (cur.first - src.first) / (dst.first - src.first);
+            double t_next = (next.first - src.first) / (dst.first - src.first);
+            if (t_cur > 1) {
+                if (inside(src, cur)) {
+                    res.emplace(cur);
+                }
+            }
+            if (t_next > 1) {
+                if (inside(src, next)) {
+                    res.emplace(next);
+                }
             }
         }
     }
     return res;
-
 }
 
 std::set<std::pair<double, double>> poly::visible(std::pair<double, double> src) {
@@ -328,6 +334,7 @@ std::vector<std::pair<double, double>> poly::polygon_intersect(std::vector<std::
 
     bg::assign_points(poly1, points1);
     bg::assign_points(poly2, points2);
+    //! 对于非凸多边形，不确定是否需要correct来对点进行排序
     bg::correct(poly1);
     bg::correct(poly2);
 
@@ -340,4 +347,77 @@ std::vector<std::pair<double, double>> poly::polygon_intersect(std::vector<std::
     }
     res.pop_back();
     return res;
+}
+
+double poly::area_helper(std::vector<std::pair<double, double>> vc) {
+    double res = 0;
+    int size = vc.size();
+    for (int i = 0; i < size; ++i) {
+        auto cur = vc[i];
+        auto next = vc[(i + 1) % size];
+        res += (cur.first * next.second - cur.second * next.first) / 2.0;
+    }
+
+    auto cur = vc[size - 1];
+    auto next = vc[0];
+    res += (cur.first * next.second - cur.second * next.first) / 2.0;
+
+    return abs(res);
+}
+
+std::vector<std::pair<double, double>> poly::sort_vertex(std::set<std::pair<double, double>> st) {  
+    // use a lambda function to get the possible vertex on a line 
+    // iterate through all edges
+    std::vector<std::pair<double, double>> res;
+    //std::unordered_set<std::pair<double, double>> s;
+    int size = points.size();
+
+    for (int i = 0; i < size; ++i) {
+        auto cur = this->points[i];
+        auto next = points[(i + 1) % size];
+
+        if (st.contains(cur)) {
+            res.emplace_back(cur);
+            st.erase(cur);
+        }
+
+        std::vector<std::pair<double, double>> temp;
+        auto f = [this, i, size, cur, next] (std::pair<double, double> p) {
+            return (is_on_line(p, cur, next) == 1);
+        };
+        std::copy_if(st.begin(), st.end(), std::back_inserter(temp), f);
+
+        if (temp.size()) {
+            auto it = std::find(temp.begin(), temp.end(), cur);
+            if (it != temp.end()) {
+                temp.erase(it);
+            }
+            it = std::find(temp.begin(), temp.end(), next);
+            if (it != temp.end()) {
+                temp.erase(it);
+            }
+            std::sort(temp.begin(), temp.end(), [cur, next](std::pair<double, double> p1, std::pair<double, double> p2) {
+                double t1 = (p1.first - cur.first) / (next.first - cur.first);
+                double t2 = (p2.first - cur.first) / (next.first - cur.first);
+                return t1 < t2;
+            });
+            for (auto&& i : temp) {
+                res.emplace_back(i);
+                st.erase(i);
+            }
+        }
+    }
+    return res;
+}
+
+double poly::area(std::pair<double, double> src) {
+    auto vis = visible(src);
+    std::set<std::pair<double, double>> res;
+
+    for (auto&& i : vis) {
+        res.merge(intersect(src, i));
+    }
+
+    auto vc = sort_vertex(res);
+    return area_helper(vc);
 }
