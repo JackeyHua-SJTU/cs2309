@@ -12,6 +12,9 @@ class poly {
         double cross(std::vector<double> v1, std::vector<double> v2);
 
     public:
+        double area_covered;
+        std::pair<double, double> pos;
+        std::vector<std::pair<double, double>> vertex_set;
         poly() = default;
         poly(std::vector<std::pair<double, double>> vc);
         bool inside(std::pair<double, double> p);
@@ -26,6 +29,8 @@ class poly {
         std::pair<double, double> get_intersection(std::pair<double, double> l1_src, std::pair<double, double> l1_dst, std::pair<double, double> l2_src, std::pair<double, double> l2_dst); // intersection point (must be regular intersection)
         std::vector<std::pair<double, double>> polygon_intersect(std::vector<std::pair<double, double>> vc1, std::vector<std::pair<double, double>> vc2);
         double area_helper(std::vector<std::pair<double, double>> vc);
+        std::vector<std::pair<double, double>> get_vertex_set(std::pair<double, double> src);
+        void execute();
 };
 
 #endif

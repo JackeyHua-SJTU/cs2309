@@ -4,6 +4,9 @@
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
+#include <omp.h>
+#include <map>
+#include <iostream>
 
 namespace bg = boost::geometry;
 
@@ -29,18 +32,19 @@ double poly::cross(std::vector<double> v1, std::vector<double> v2) {
 //! intersection of two SEGMENTS
 int poly::is_line_intersection(std::pair<double, double> l1_src, std::pair<double, double> l1_dst, std::pair<double, double> l2_src, std::pair<double, double> l2_dst) {
     // regular intersection
+    const double eps = 1e-6;
     std::vector<double> l1 = {l1_dst.first - l1_src.first, l1_dst.second - l1_src.second};
     std::vector<double> l2 = {l2_dst.first - l2_src.first, l2_dst.second - l2_src.second};
     double cross_l1_l2_src = l1[0] * (l2_src.second - l1_src.second) - l1[1] * (l2_src.first - l1_src.first);
     double cross_l1_l2_dst = l1[0] * (l2_dst.second - l1_src.second) - l1[1] * (l2_dst.first - l1_src.first);
     double cross_l2_l1_src = l2[0] * (l1_src.second - l2_src.second) - l2[1] * (l1_src.first - l2_src.first);
     double cross_l2_l1_dst = l2[0] * (l1_dst.second - l2_src.second) - l2[1] * (l1_dst.first - l2_src.first);
-    if ((cross_l1_l2_src * cross_l1_l2_dst < 0) && (cross_l2_l1_src * cross_l2_l1_dst < 0)) {
+    if ((cross_l1_l2_src * cross_l1_l2_dst < -eps) && (cross_l2_l1_src * cross_l2_l1_dst < -eps)) {
         return 1;
     }
     // irregular intersection
     // colinear
-    if (!cross_l1_l2_dst && !cross_l1_l2_src && !cross_l2_l1_dst && !cross_l2_l1_src) {
+    if (abs(cross_l1_l2_dst) <= eps && abs(cross_l1_l2_src) <= eps && abs(cross_l2_l1_dst) <= eps && abs(cross_l2_l1_src) <= eps) {
         std::vector<double> l1_src_to_l2_src = {l2_src.first - l1_src.first, l2_src.second - l1_src.second};
         std::vector<double> l1_src_to_l2_dst = {l2_dst.first - l1_src.first, l2_dst.second - l1_src.second};
         std::vector<double> l1_dst_to_l2_src = {l2_src.first - l1_dst.first, l2_src.second - l1_dst.second};
@@ -54,18 +58,18 @@ int poly::is_line_intersection(std::pair<double, double> l1_src, std::pair<doubl
     }
 
     std::pair<double, double> start, end, cur;
-    if (!cross_l1_l2_src || !cross_l1_l2_dst) {
+    if (abs(cross_l1_l2_src) <= eps || abs(cross_l1_l2_dst) <= eps) {
         start = l1_src;
         end = l1_dst;
-        if (!cross_l1_l2_src) {
+        if (abs(cross_l1_l2_src) <= eps) {
             cur = l2_src;
         } else {
             cur = l2_dst;
         }
-    } else if (!cross_l2_l1_src || !cross_l2_l1_dst) {
+    } else if (abs(cross_l2_l1_src) <= eps || abs(cross_l2_l1_dst) <= eps) {
         start = l2_src;
         end = l2_dst;
-        if (!cross_l2_l1_src) {
+        if (abs(cross_l2_l1_src) <= eps) {
             cur = l1_src;
         } else {
             cur = l1_dst;
@@ -350,17 +354,16 @@ std::vector<std::pair<double, double>> poly::polygon_intersect(std::vector<std::
 }
 
 double poly::area_helper(std::vector<std::pair<double, double>> vc) {
-    double res = 0;
+    double res = 0.0;
     int size = vc.size();
+    if (!size) {
+        return 0.0;
+    }
     for (int i = 0; i < size; ++i) {
         auto cur = vc[i];
         auto next = vc[(i + 1) % size];
         res += (cur.first * next.second - cur.second * next.first) / 2.0;
     }
-
-    auto cur = vc[size - 1];
-    auto next = vc[0];
-    res += (cur.first * next.second - cur.second * next.first) / 2.0;
 
     return abs(res);
 }
@@ -410,7 +413,7 @@ std::vector<std::pair<double, double>> poly::sort_vertex(std::set<std::pair<doub
     return res;
 }
 
-double poly::area(std::pair<double, double> src) {
+std::vector<std::pair<double, double>> poly::get_vertex_set(std::pair<double, double> src) {
     auto vis = visible(src);
     std::set<std::pair<double, double>> res;
 
@@ -418,6 +421,59 @@ double poly::area(std::pair<double, double> src) {
         res.merge(intersect(src, i));
     }
 
-    auto vc = sort_vertex(res);
-    return area_helper(vc);
+    return sort_vertex(res);
+}
+
+double poly::area(std::pair<double, double> src) {
+    return area_helper(get_vertex_set(src));
+}
+
+void poly::execute() {
+    auto f = [](double x, double y) {return x > y;};
+    std::map<double, std::pair<double, double>, decltype(f)> m(f);
+    
+    // #pragma omp parallel num_threads(8)
+    // {
+    //     #pragma omp for
+    //     for (int i = min_x; i < max_x; ++i) {
+    //         std::map<double, std::pair<double, double>> temp;
+    //         for (int j = min_y; j < max_y; ++j) {
+    //             if (!inside({i, j})) {
+    //                 continue;
+    //             }
+    //             temp[area({i, j})] = {i, j};
+    //         }
+    //         #pragma omp critical
+    //         {
+    //             m.merge(temp);
+    //         }
+    //     }
+    // }
+
+    for (int i = min_x; i < max_x; ++i) {
+        for (int j = min_y; j < max_y; ++j) {
+            if (inside({i, j})) {
+                m[area({i, j})] = {i, j};
+                // std::cout << "current pos : " << i << " " << j << std::endl;
+                // std::cout << "area: " << area({i, j}) << std::endl;
+                // std::cout << "vertex set: " << std::endl;
+                // for (auto&& [x, y] : get_vertex_set({i, j})) {
+                //     std::cout << x << " " << y << std::endl;
+                // }
+                // std::cout << std::endl;
+            }
+        }
+    }
+
+    auto it = m.begin();
+    this->pos = it->second;
+    this->area_covered = it->first;
+    this->vertex_set = get_vertex_set(pos);
+    // std::cout << "final pos: " << pos.first << " " << pos.second << std::endl;
+    // std::cout << "final area: " << area_covered << std::endl;
+    // std::cout << "final vertex set: " << std::endl;
+    // for (auto&& [x, y] : vertex_set) {
+    //     std::cout << x << " " << y << std::endl;
+    // }
+    return ;
 }
