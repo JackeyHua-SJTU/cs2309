@@ -71,7 +71,8 @@ namespace {
         EXPECT_EQ(p2.visible({10, 10}), s2);
         std::set<std::pair<double, double>> s3 = {{10, 10}, {0, 10}, {10, 5}, {7, 3}, {-5, 0}, {7, 7}};
         EXPECT_EQ(p2.visible({7, 7}), s3);
-        std::set<std::pair<double, double>> s4 = {{-5, 15}, {-5, 0}, {0, 10}, {10, 0}, {7, 3}};
+        std::set<std::pair<double, double>> s4 = {{-5, 0},{-5, 15}, {0, 10}, {10, 10}, {7, 7}, {10, 5}, {7, 3}, {10, 0}};
+        EXPECT_EQ(p2.visible({3, 5}), s4);
     }
 
     TEST_F (poly_test, test_area_helper) {
@@ -79,6 +80,7 @@ namespace {
         EXPECT_EQ(p2.area_helper({{-5, 0},{-5, 15}, {0, 10}, {10, 10}, {7, 7}, {10, 5}, {7, 3}, {10, 0}}), 147.5);
         poly p4 = poly({{0, 0}, {1, 1}, {2, 0}});
         EXPECT_EQ(p4.area_helper({{0, 0}, {1, 1}, {2, 0}}), 1.0);
+        EXPECT_EQ(p4.area_helper({{100.0, 100.0}, {101.0, 101.0}, {102.0, 100.0}}), 1.0);
     }
 
     TEST_F (poly_test, test_intersect) {
@@ -89,6 +91,10 @@ namespace {
         std::set<std::pair<double, double>> s3 = {{10, 0}};
         EXPECT_EQ(p2.intersect({10, 0}, {10, 10}), s3);
         EXPECT_EQ(p2.intersect({10, 0}, {10, 5}), s3);
+        std::set<std::pair<double, double>> s4 = {{0, 10}};
+        EXPECT_EQ(p2.intersect({3, 5}, {0, 10}), s4);
+        std::set<std::pair<double, double>> s5 = {{-5, 0}};
+        EXPECT_EQ(p2.intersect({3, 5}, {-5, 0}), s5);
     }
 
     TEST_F (poly_test, test_sort_vertex) {
