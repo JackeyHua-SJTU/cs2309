@@ -114,4 +114,51 @@ namespace {
         EXPECT_EQ(p2.area({-5, 15}), 112.5);
     }
 
+    TEST_F (poly_test, test_vertex_inside_obstacle) {
+        std::vector<std::pair<double, double>> obs = {{-2, 2}, {-2, 5}, {3, 5}, {3, 2}};
+        p2.set_obstacle(obs);
+        EXPECT_FALSE(p2.inside_obstacle({0, 3}));
+        EXPECT_FALSE(p2.inside_obstacle({0, 4.5}));
+        EXPECT_FALSE(p2.inside_obstacle({2, 4}));
+        EXPECT_TRUE(p2.inside_obstacle({3, 5}));
+        EXPECT_TRUE(p2.inside_obstacle({-2, 2}));
+        EXPECT_TRUE(p2.inside_obstacle({3, 1}));
+        EXPECT_TRUE(p2.inside_obstacle({3, 6}));
+        EXPECT_TRUE(p2.inside_obstacle({10, 10}));
+        EXPECT_TRUE(p2.inside_obstacle({9, 10}));
+        EXPECT_TRUE(p2.inside_obstacle({0, 2}));
+        EXPECT_TRUE(p2.inside_obstacle({-5, 15}));
+    }
+
+    TEST_F (poly_test, test_segment_inside_obstacle) {
+        std::vector<std::pair<double, double>> obs = {{-2, 2}, {-2, 5}, {3, 5}, {3, 2}};
+        p2.set_obstacle(obs);
+        EXPECT_FALSE(p2.inside_obstacle({0, 3}, {0, 4.5}));
+        EXPECT_FALSE(p2.inside_obstacle({7, 3}, {-3, 3}));
+        EXPECT_FALSE(p2.inside_obstacle({3, 5}, {2, 4}));
+        EXPECT_FALSE(p2.inside_obstacle({0, 3}, {1, 4}));
+        EXPECT_FALSE(p2.inside_obstacle({-1, 6}, {5, 0}));
+        EXPECT_FALSE(p2.inside_obstacle({2, 2}, {2, 5}));
+        EXPECT_TRUE(p2.inside_obstacle({3, 2}, {3, 5}));
+        EXPECT_TRUE(p2.inside_obstacle({3, 2}, {-2, 2}));
+        EXPECT_TRUE(p2.inside_obstacle({-4, 4}, {0, 0}));
+        EXPECT_TRUE(p2.inside_obstacle({-3, 5}, {4, 5}));
+        EXPECT_TRUE(p2.inside_obstacle({0, 10}, {7, 3}));
+        EXPECT_TRUE(p2.inside_obstacle({-4, 6}, {0, 8}));
+    }
+
+    TEST_F (poly_test, test_intersect_obstacle) {
+        std::vector<std::pair<double, double>> obs = {{-2, 2}, {-2, 5}, {3, 5}, {3, 2}};
+        p2.set_obstacle(obs);
+        std::set<std::pair<double, double>> s1 = {{3, 2}, {3, 5}, {3, 10}};
+        EXPECT_EQ(p2.intersect_obstacle({3, 1}, {3, 2}), s1);
+        std::set<std::pair<double, double>> s2 = {{0, 0}, {-2, 2}, {-5, 5}};
+        EXPECT_EQ(p2.intersect_obstacle({0, 0}, {-2, 2}), s2);
+        std::set<std::pair<double, double>> s3 = {{10, 0}};
+        EXPECT_EQ(p2.intersect_obstacle({10, 0}, {10, 10}), s3);
+        EXPECT_EQ(p2.intersect_obstacle({10, 0}, {10, 5}), s3);
+        std::set<std::pair<double, double>> s4 = {{0, 10}, {3, 5}};
+        EXPECT_EQ(p2.intersect_obstacle({3, 5}, {0, 10}), s4);
+    }
+
 }
