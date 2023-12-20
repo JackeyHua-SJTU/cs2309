@@ -34,6 +34,17 @@ poly::poly() {
     points.clear();
 }
 
+bool poly::vertex_on_edge(std::pair<double, double> src) {
+    for (int i = 0; i < points.size(); ++i) {
+        auto cur = points[i];
+        auto next = points[(i + 1) % points.size()];
+        if (is_on_line(src, cur, next) == 1) {
+            return true;
+        }
+    }
+    return false;
+}
+
 //* cross product of two vectors
 double poly::cross(std::vector<double> v1, std::vector<double> v2) {
     return v1[0] * v2[1] - v1[1] * v2[0];
@@ -366,8 +377,14 @@ std::set<std::pair<double, double>> poly::visible(std::pair<double, double> src)
     std::set<std::pair<double, double>> res;
     int size = points.size();
     for (int i = 0; i < size; ++i) {
-        if (inside(src, points[i])) {
-            res.emplace(points[i]);
+        if (this->flag) {
+            if (inside_obstacle(src, points[i])) {
+                res.emplace(points[i]);
+            }
+        } else {
+            if (inside(src, points[i])) {
+                res.emplace(points[i]);
+            }
         }
     }
     return res;
@@ -469,11 +486,17 @@ std::vector<std::pair<double, double>> poly::get_vertex_set(std::pair<double, do
     auto vis = visible(src);
     std::set<std::pair<double, double>> res;
 
-    for (auto&& i : vis) {
-        res.merge(intersect(src, i));
+    if (flag) {
+        for (auto&& i : vis) {
+            res.merge(intersect_obstacle(src, i));
+        }
+        return sort_vertex_obstacle(res, src);
+    } else {
+        for (auto&& i : vis) {
+            res.merge(intersect(src, i));
+        }
+        return sort_vertex(res);
     }
-
-    return sort_vertex(res);
 }
 
 double poly::area(std::pair<double, double> src) {
@@ -625,4 +648,254 @@ void poly::execute_two_camera() {
     // this->area_covered = it->first;
     // this->pos_in_pair = it->second;
     // this->vertex_set = polygon_intersect(get_vertex_set(pos_in_pair[0]), get_vertex_set(pos_in_pair[1]));
+}
+
+bool poly::is_valid_obstacle() {
+    int size = obstacle.size();
+    if (size < 3) {
+        return false;
+    }
+
+    for (int i = 0; i < size; ++i) {
+        auto cur = obstacle[i];
+        auto next = obstacle[(i + 1) % size];
+        if (cur == next) {
+            return false;
+        }
+        if (!inside(cur, next)) {
+            return false;
+        }
+        
+    }
+    return true;
+}
+
+//* inside funtion for polygon with an obstacle inside
+//* inside the polygon, not the obstacle
+bool poly::inside_obstacle(std::pair<double, double> p) {
+    if (!inside(p)) {
+        return false;
+    }
+    poly temp(this->obstacle);
+    if (temp.inside(p)) {
+        if (temp.vertex_on_edge(p)) {
+            return true;
+        }
+        return false;
+    }
+    return true;
+}
+
+std::set<std::pair<double, double>> poly::intersect_obstacle(std::pair<double, double> src, std::pair<double, double> dst) {
+    double threshold;
+    const double eps = 1e-6;
+    std::set<std::pair<double, double>> res;
+    if (src == dst || !inside_obstacle(src) || !inside_obstacle(dst)) {
+        return res;
+    }
+    // set the threshold, which means the end point of a "infinite long" segment from src to dst
+    // use the parameter form of a line (l = p1 + t * (p2 - p1)), threshold actually is "t"
+    if (src.first == dst.first) {
+        if (dst.second > src.second) {
+            threshold = (max_y - src.second) / (dst.second - src.second) + 2.0;
+        } else {
+            threshold = (min_y - src.second) / (dst.second - src.second) + 2.0;
+        }
+    } else if (src.second == dst.second) {
+        if (dst.first > src.first) {
+            threshold = (max_x - src.first) / (dst.first - src.first) + 2.0;
+        } else {
+            threshold = (min_x - src.first) / (dst.first - src.first) + 2.0;
+        }
+    } else {
+        double t_x_max = (max_x - src.first) / (dst.first - src.first) + 2.0;
+        double t_x_min = (min_x - src.first) / (dst.first - src.first) + 2.0;
+        double t_y_max = (max_y - src.second) / (dst.second - src.second) + 2.0;
+        double t_y_min = (min_y - src.second) / (dst.second - src.second) + 2.0;
+        if (src.first < dst.first && src.second < dst.second) {
+            threshold = std::max(t_x_max, t_y_max);
+        } else if (src.first < dst.first && src.second > dst.second) {
+            threshold = std::max(t_x_max, t_y_min);
+        } else if (src.first > dst.first && src.second < dst.second) {
+            threshold = std::max(t_x_min, t_y_max);
+        } else if (src.first > dst.first && src.second > dst.second) {
+            threshold = std::max(t_x_min, t_y_min);
+        }
+    }
+    
+    int size = this->points.size();
+    std::pair inf = {src.first + threshold * (dst.first - src.first), src.second + threshold * (dst.second - src.second)};
+    for (int i = 0; i < size; ++i) {
+        auto cur = points[i];
+        auto next = points[(i + 1) % size];
+        auto intersection = is_line_intersection(src, inf, cur, next);
+        if (intersection == 1) {
+            // if regular intersection, then the line will be outside the polygon, break it.
+            std::vector<double> src_to_dst = {dst.first - src.first, dst.second - src.second};
+            std::vector<double> src_to_cur = {cur.first - src.first, cur.second - src.second};
+            std::vector<double> src_to_next = {next.first - src.first, next.second - src.second};
+            double lambda = abs((src_to_cur[0] * src_to_dst[1] - src_to_cur[1] * src_to_dst[0]) / 
+                            (src_to_next[0] * src_to_dst[1] - src_to_next[1] * src_to_dst[0]));
+            std::pair<double, double> intersection_point = {cur.first + lambda * (next.first - cur.first) / (1 + lambda), 
+                                                            cur.second + lambda * (next.second - cur.second) / (1 + lambda)};
+            if (inside_obstacle(src, intersection_point)) {
+                res.emplace(intersection_point);
+            }
+        } else if (intersection == -1) {
+            auto intersection_point = get_intersection(src, inf, cur, next);
+            if (inside_obstacle(src, intersection_point)) {
+                res.emplace(intersection_point);
+            }
+        } else if (intersection == -2) {
+            // count the "t" of cur and next, if greater than 1, then check inside.
+            // if inside, we can push it into the set
+            double t_cur = (cur.first - src.first) / (dst.first - src.first);
+            double t_next = (next.first - src.first) / (dst.first - src.first);
+            if (t_cur > 1) {
+                if (inside_obstacle(src, cur)) {
+                    res.emplace(cur);
+                }
+            }
+            if (t_next > 1) {
+                if (inside_obstacle(src, next)) {
+                    res.emplace(next);
+                }
+            }
+        }
+    }
+
+    int size_obstacle = obstacle.size();
+    for (int i = 0; i < size_obstacle; ++i) {
+        auto cur = obstacle[i];
+        auto next = obstacle[(i + 1) % size_obstacle];
+        auto intersection = is_line_intersection(src, inf, cur, next);
+        if (intersection == 1) {
+            // if regular intersection, then the line will be outside the polygon, break it.
+            std::vector<double> src_to_dst = {dst.first - src.first, dst.second - src.second};
+            std::vector<double> src_to_cur = {cur.first - src.first, cur.second - src.second};
+            std::vector<double> src_to_next = {next.first - src.first, next.second - src.second};
+            double lambda = abs((src_to_cur[0] * src_to_dst[1] - src_to_cur[1] * src_to_dst[0]) / 
+                            (src_to_next[0] * src_to_dst[1] - src_to_next[1] * src_to_dst[0]));
+            std::pair<double, double> intersection_point = {cur.first + lambda * (next.first - cur.first) / (1 + lambda), 
+                                                            cur.second + lambda * (next.second - cur.second) / (1 + lambda)};
+            if (inside_obstacle(src, intersection_point)) {
+                res.emplace(intersection_point);
+            }
+        } else if (intersection == -1) {
+            auto intersection_point = get_intersection(src, inf, cur, next);
+            if (inside_obstacle(src, intersection_point)) {
+                res.emplace(intersection_point);
+            }
+        } else if (intersection == -2) {
+            // count the "t" of cur and next, if greater than 1, then check inside.
+            // if inside, we can push it into the set
+            double t_cur = (cur.first - src.first) / (dst.first - src.first);
+            double t_next = (next.first - src.first) / (dst.first - src.first);
+            if (t_cur > 1) {
+                if (inside_obstacle(src, cur)) {
+                    res.emplace(cur);
+                }
+            }
+            if (t_next > 1) {
+                if (inside_obstacle(src, next)) {
+                    res.emplace(next);
+                }
+            }
+        }
+    }
+    return res;
+}
+
+bool poly::inside_obstacle(std::pair<double, double> src, std::pair<double, double> dst) {
+    if (!inside_obstacle(src) || !inside_obstacle(dst)) {
+        return false;
+    }
+    if (src == dst) {
+        return inside_obstacle(src);
+    }
+    int size = points.size();
+    int x_dir = (dst.first >= src.first) ? 1 : -1;
+    int y_dir = (dst.second >= src.second) ? 1 : -1;
+    std::vector<std::pair<double, double>> intersect_points;
+    intersect_points.push_back(src);
+    intersect_points.push_back(dst);
+    for (int i = 0; i < size; ++i) {
+        auto cur = points[i];
+        auto next = points[(i + 1) % size];
+        int intersection = is_line_intersection(src, dst, cur, next);
+        if (intersection == 1 || intersection == -1) {
+            intersect_points.push_back(get_intersection(src, dst, cur, next));
+        } else if (intersection == 0) {
+            continue;
+        } else {
+            if (is_on_line(cur, src, dst) == 1) {
+                intersect_points.push_back(cur);
+            }
+            if (is_on_line(next, src, dst) == 1) {
+                intersect_points.push_back(next);
+            }
+        }
+    }
+
+    int size_obstacle = obstacle.size();
+    for (int i = 0; i < size_obstacle; ++i) {
+        auto cur = obstacle[i];
+        auto next = obstacle[(i + 1) % size_obstacle];
+        int intersection = is_line_intersection(src, dst, cur, next);
+        if (intersection == 1 || intersection == -1) {
+            intersect_points.push_back(get_intersection(src, dst, cur, next));
+        } else if (intersection == 0) {
+            continue;
+        } else {
+            if (is_on_line(cur, src, dst) == 1) {
+                intersect_points.push_back(cur);
+            }
+            if (is_on_line(next, src, dst) == 1) {
+                intersect_points.push_back(next);
+            }
+        }
+    }
+
+    auto f = [x_dir, y_dir](std::pair<double, double> p1, std::pair<double, double> p2) {
+        if (x_dir == 1 && y_dir == 1) {
+            if (p1.first != p2.first) {
+                return (p1.first < p2.first);
+            } else {
+                return (p1.second < p2.second);
+            }
+        } else if (x_dir == 1 && y_dir == -1) {
+            if (p1.first != p2.first) {
+                return (p1.first < p2.first);
+            } else {
+                return (p1.second > p2.second);
+            }
+        } else if (x_dir == -1 && y_dir == 1) {
+            if (p1.first != p2.first) {
+                return (p1.first > p2.first);
+            } else {
+                return (p1.second < p2.second);
+            }
+        } else if (x_dir == -1 && y_dir == -1) {
+            if (p1.first != p2.first) {
+                return (p1.first > p2.first);
+            } else {
+                return (p1.second > p2.second);
+            }
+        }
+        return false;
+    };
+    std::sort(intersect_points.begin(), intersect_points.end(), f);
+    auto prev = intersect_points[0];
+    for (int i = 1; i < intersect_points.size(); ++i) {
+        auto cur = intersect_points[i];
+        if (!inside_obstacle({(prev.first + cur.first) / 2.0, (prev.second + cur.second) / 2.0})) {
+            return false;
+        }
+        prev = cur;
+    }
+    return true;
+}
+
+std::vector<std::pair<double, double>> poly::sort_vertex_obstacle(std::set<std::pair<double, double>> st, std::pair<double, double> src) {
+    
 }

@@ -8,12 +8,16 @@ class poly {
     private:
         std::vector<std::pair<double, double>> points;
         double min_x, max_x, min_y, max_y; // for wrapper box
-        bool flag;  // if choose two cameras, then flag is true
+        bool flag;  // true if there is an obstacle
         std::vector<std::pair<double, double>> vertex_inside;
+        std::vector<std::pair<double, double>> obstacle;
         int is_on_line(std::pair<double, double> p, std::pair<double, double> l_src, std::pair<double, double> l_dst);
         double cross(std::vector<double> v1, std::vector<double> v2);
 
     public:
+        bool vertex_on_edge(std::pair<double, double> p);
+        bool is_valid_obstacle();
+        inline void set_obstacle(std::vector<std::pair<double, double>> vc) {obstacle = vc;}
         inline std::vector<std::pair<double, double>> get_points() {return points;}
         double area_covered;
         std::pair<double, double> pos;  // for one-camera case
@@ -39,6 +43,10 @@ class poly {
         void add_point(std::pair<double, double> p);
         void add_curve(std::pair<double, double> src, std::pair<double, double> dst, std::pair<double, double> ctrl);
         void set_inside_set();
+        bool inside_obstacle(std::pair<double, double> p);
+        std::set<std::pair<double, double>> intersect_obstacle(std::pair<double, double> src, std::pair<double, double> dst);
+        bool inside_obstacle(std::pair<double, double> src, std::pair<double, double> dst);
+        std::vector<std::pair<double, double>> poly::sort_vertex_obstacle(std::set<std::pair<double, double>> st,std::pair<double, double> src);
 };
 
 #endif
