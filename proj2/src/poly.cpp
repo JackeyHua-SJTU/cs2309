@@ -22,6 +22,7 @@ poly::poly(std::vector<std::pair<double, double>> vc, bool flag) : points(vc), m
         max_y = std::max(max_y, y);
     }
     this->flag = flag;
+    this->area_covered = 0.0;
 }
 
 poly::poly() {
@@ -29,6 +30,7 @@ poly::poly() {
     max_x = INT_MIN;
     min_y = INT_MAX;
     max_y = INT_MIN;
+    this->area_covered = 0.0;
     points.clear();
 }
 
@@ -386,11 +388,14 @@ std::vector<std::pair<double, double>> poly::polygon_intersect(std::vector<std::
     bg::assign_points(poly1, points1);
     bg::assign_points(poly2, points2);
     //! 对于非凸多边形，不确定是否需要correct来对点进行排序
-    bg::correct(poly1);
-    bg::correct(poly2);
+//    bg::correct(poly1);
+//    bg::correct(poly2);
 
     std::vector<Polygon> intersection;
     bg::intersection(poly1, poly2, intersection);
+    if (intersection.empty()) {
+        return res;
+    }
     Polygon inter = intersection[0];
 
     for (auto&& p : inter.outer()) {
@@ -488,7 +493,9 @@ void poly::set_inside_set() {
             }
             #pragma omp critical
             {
-                std::merge(vertex_inside.begin(), vertex_inside.end(), temp.begin(), temp.end(), vertex_inside.begin());
+                for (int i = 0; i < temp.size(); ++i) {
+                    vertex_inside.push_back(temp[i]);
+                }
             }
         }
     }
@@ -545,31 +552,77 @@ void poly::execute_one_camera() {
     return ;
 }
 
+//! theoretically practical, but too time-consuming
+//TODO: check the intersection of two polygons and seek to optimize
 void poly::execute_two_camera() {
     set_inside_set();
-    auto f = [](double x, double y) {return x > y;};
-    std::map<double, std::vector<std::pair<double, double>>, decltype(f)> m(f);
+    int size = vertex_inside.size();
+    double max_area = 0.0;
+    // auto f = [](double x, double y) {return x > y;};
+    // std::map<double, std::vector<std::pair<double, double>>, decltype(f)> m(f);
 
     #pragma omp parallel num_threads(8)
-    {   
-        int size = vertex_inside.size();
+    {
         #pragma omp for 
         for (int v1 = 0; v1 < size; ++v1) {
             std::map<double, std::vector<std::pair<double, double>>> temp;
+            double area = 0.0;
+            std::vector<std::pair<double, double>> temp_pos;
+            std::vector<std::pair<double, double>> temp_vertex;
             for (int v2 = v1 + 1; v2 < size; ++v2) {
                 auto p1 = vertex_inside[v1];
                 auto p2 = vertex_inside[v2];
-                auto intersection_vertex = polygon_intersect(get_vertex_set(p1), get_vertex_set(p2));
-                temp[area_helper(intersection_vertex)] = {p1, p2};
+                std::cout << "index " << v1 << " and " << v2 << std::endl;
+                auto p1_set = get_vertex_set(p1);
+                auto p2_set = get_vertex_set(p2);
+                
+                for (auto&& [x, y] : p1_set) {
+                    std::cout << x << " " << y << std::endl;
+                }
+                std::cout << std::endl;
+                for (auto&& [x, y] : p2_set) {
+                    std::cout << x << " " << y << std::endl;
+                }
+
+                auto intersection_vertex = polygon_intersect(p1_set, p2_set);
+                std::cout << "intersection vertex in index " << v1 << " " << v2 << " has size: " << intersection_vertex.size() << std::endl;
+                double cur_area = area_helper(p1_set) + area_helper(p2_set) - area_helper(intersection_vertex);
+                std::cout << "cur area : " << cur_area << std::endl;
+                if (cur_area > area) {
+                    area = cur_area;
+                    temp_pos = {p1, p2};
+                    temp_vertex = intersection_vertex;
+                }
             }
             #pragma omp critical
             {
-                m.merge(temp);
+                if (area > this->area_covered) {
+                    area_covered = area;
+                    pos_in_pair = temp_pos;
+                    vertex_set = temp_vertex;
+                }
             }
         }
     }
-    auto it = m.begin();
-    this->area_covered = it->first;
-    this->pos_in_pair = it->second;
-    this->vertex_set = polygon_intersect(get_vertex_set(pos_in_pair[0]), get_vertex_set(pos_in_pair[1]));
+
+    // for (int i = 0; i < size; ++i) {
+    //     for (int j = i + 1; j < size; ++j) {
+    //         auto p1 = vertex_inside[i];
+    //         auto p2 = vertex_inside[j];
+    //         std::cout << "index " << i << " and " << j << std::endl;
+    //         auto intersection_vertex = polygon_intersect(get_vertex_set(p1), get_vertex_set(p2));
+    //         std::cout << "intersection vertex in index " << i << " " << j << " has size: " << intersection_vertex.size() << std::endl;
+    //         auto area = area_helper(intersection_vertex);
+    //         if (area > max_area) {
+    //             max_area = area;
+    //             this->pos_in_pair = {p1, p2};
+    //             this->vertex_set = intersection_vertex;
+    //         }
+    //     }
+    // }
+
+    // auto it = m.begin();
+    // this->area_covered = it->first;
+    // this->pos_in_pair = it->second;
+    // this->vertex_set = polygon_intersect(get_vertex_set(pos_in_pair[0]), get_vertex_set(pos_in_pair[1]));
 }
