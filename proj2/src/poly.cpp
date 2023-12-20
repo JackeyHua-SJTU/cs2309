@@ -228,6 +228,7 @@ bool poly::inside(std::pair<double, double> src, std::pair<double, double> dst) 
         if (!inside({(prev.first + cur.first) / 2.0, (prev.second + cur.second) / 2.0})) {
             return false;
         }
+        prev = cur;
     }
     return true;
 }
@@ -432,38 +433,39 @@ void poly::execute() {
     auto f = [](double x, double y) {return x > y;};
     std::map<double, std::pair<double, double>, decltype(f)> m(f);
     
-    // #pragma omp parallel num_threads(8)
-    // {
-    //     #pragma omp for
-    //     for (int i = min_x; i < max_x; ++i) {
-    //         std::map<double, std::pair<double, double>> temp;
-    //         for (int j = min_y; j < max_y; ++j) {
-    //             if (!inside({i, j})) {
-    //                 continue;
-    //             }
-    //             temp[area({i, j})] = {i, j};
-    //         }
-    //         #pragma omp critical
-    //         {
-    //             m.merge(temp);
-    //         }
-    //     }
-    // }
-
-    for (int i = min_x; i < max_x; ++i) {
-        for (int j = min_y; j < max_y; ++j) {
-            if (inside({i, j})) {
-                m[area({i, j})] = {i, j};
-                // std::cout << "current pos : " << i << " " << j << std::endl;
-                // std::cout << "area: " << area({i, j}) << std::endl;
-                // std::cout << "vertex set: " << std::endl;
-                // for (auto&& [x, y] : get_vertex_set({i, j})) {
-                //     std::cout << x << " " << y << std::endl;
-                // }
-                // std::cout << std::endl;
+    #pragma omp parallel num_threads(8)
+    {
+        #pragma omp for
+        for (int i = min_x; i < max_x; ++i) {
+            std::map<double, std::pair<double, double>> temp;
+            for (int j = min_y; j < max_y; ++j) {
+                if (!inside({i, j})) {
+                    continue;
+                }
+                temp[area({i, j})] = {i, j};
+            }
+            #pragma omp critical
+            {
+                m.merge(temp);
             }
         }
     }
+
+    // non-parallel version
+    // for (int i = min_x; i < max_x; ++i) {
+    //     for (int j = min_y; j < max_y; ++j) {
+    //         if (inside({i, j})) {
+    //             m[area({i, j})] = {i, j};
+    //             // std::cout << "current pos : " << i << " " << j << std::endl;
+    //             // std::cout << "area: " << area({i, j}) << std::endl;
+    //             // std::cout << "vertex set: " << std::endl;
+    //             // for (auto&& [x, y] : get_vertex_set({i, j})) {
+    //             //     std::cout << x << " " << y << std::endl;
+    //             // }
+    //             // std::cout << std::endl;
+    //         }
+    //     }
+    // }
 
     auto it = m.begin();
     this->pos = it->second;
