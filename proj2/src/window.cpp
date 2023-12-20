@@ -1,17 +1,18 @@
 #include "window.h"
 #include <FL/fl_draw.H>
 #include <iostream>
+#include <iomanip>
 
 window::window(int w, int h, std::vector<std::pair<double, double>> points, const char *title) : Fl_Window(w, h, title) {
     this->points = points;
     p = poly(points);
-    p.execute();
-    // std::cout << "area: "<< p.area_covered << std::endl;
-    // std::cout << "pos : " << p.pos.first << " " << p.pos.second << std::endl;
-    // std::cout << "vertex set: " << std::endl;
-    // for (auto&& [x, y] : p.vertex_set) {
-    //     std::cout << x << " " << y << std::endl;
-    // }
+    p.execute_one_camera();
+    std::cout << std::fixed << std::setprecision(4) << "area: " << p.area_covered << std::endl;
+    std::cout << "pos : " << p.pos.first << " " << p.pos.second << std::endl;
+    std::cout << "vertex set: " << std::endl;
+    for (auto&& [x, y] : p.vertex_set) {
+        std::cout << x << " " << y << std::endl;
+    }
 }
 
 void window::draw() {
@@ -35,4 +36,8 @@ void window::draw() {
         fl_vertex(x, y);
     }
     fl_end_polygon();
+
+    fl_color(FL_GREEN);
+    fl_circle(p.pos.first, p.pos.second, 2);
+
 }

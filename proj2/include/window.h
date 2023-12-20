@@ -9,11 +9,13 @@
 class window : public Fl_Window {
     private:
         std::vector<std::pair<double, double>> points;
-        poly p;
+        
 
     public:
         window(int w, int h, std::vector<std::pair<double, double>> points, const char *title);
+        window(int w, int h, const char *title) : Fl_Window(w, h, title) { }
         void draw() override;
+        poly p;
 };
 
 #endif

@@ -8,15 +8,19 @@ class poly {
     private:
         std::vector<std::pair<double, double>> points;
         double min_x, max_x, min_y, max_y; // for wrapper box
+        bool flag;  // if choose two cameras, then flag is true
+        std::vector<std::pair<double, double>> vertex_inside;
         int is_on_line(std::pair<double, double> p, std::pair<double, double> l_src, std::pair<double, double> l_dst);
         double cross(std::vector<double> v1, std::vector<double> v2);
 
     public:
+        inline std::vector<std::pair<double, double>> get_points() {return points;}
         double area_covered;
-        std::pair<double, double> pos;
+        std::pair<double, double> pos;  // for one-camera case
+        std::vector<std::pair<double, double>> pos_in_pair; // only for two-camera case
         std::vector<std::pair<double, double>> vertex_set;
-        poly() = default;
-        poly(std::vector<std::pair<double, double>> vc);
+        poly();
+        poly(std::vector<std::pair<double, double>> vc, bool flag = false);
         bool inside(std::pair<double, double> p);
         bool inside(std::pair<double, double> src, std::pair<double, double> dst);
         std::set<std::pair<double, double>> visible(std::pair<double, double> src);
@@ -30,7 +34,11 @@ class poly {
         std::vector<std::pair<double, double>> polygon_intersect(std::vector<std::pair<double, double>> vc1, std::vector<std::pair<double, double>> vc2);
         double area_helper(std::vector<std::pair<double, double>> vc);
         std::vector<std::pair<double, double>> get_vertex_set(std::pair<double, double> src);
-        void execute();
+        void execute_one_camera();
+        void execute_two_camera();
+        void add_point(std::pair<double, double> p);
+        void add_curve(std::pair<double, double> src, std::pair<double, double> dst, std::pair<double, double> ctrl);
+        void set_inside_set();
 };
 
 #endif

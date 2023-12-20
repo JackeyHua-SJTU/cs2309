@@ -6,6 +6,7 @@
 #include <boost/geometry/geometries/polygon.hpp>
 #include <omp.h>
 #include <map>
+#include <cmath>
 #include <iostream>
 
 namespace bg = boost::geometry;
@@ -13,18 +14,63 @@ namespace bg = boost::geometry;
 typedef bg::model::d2::point_xy<double> Point;
 typedef bg::model::polygon<Point> Polygon;
 
-poly::poly(std::vector<std::pair<double, double>> vc) : points(vc), min_x(INT_MAX), max_x(INT_MIN), min_y(INT_MAX), max_y(INT_MIN) {
+poly::poly(std::vector<std::pair<double, double>> vc, bool flag) : points(vc), min_x(INT_MAX), max_x(INT_MIN), min_y(INT_MAX), max_y(INT_MIN) {
     for (auto&& [x, y] : this->points) {
         min_x = std::min(min_x, x);
         max_x = std::max(max_x, x);
         min_y = std::min(min_y, y);
         max_y = std::max(max_y, y);
     }
+    this->flag = flag;
+}
+
+poly::poly() {
+    min_x = INT_MAX;
+    max_x = INT_MIN;
+    min_y = INT_MAX;
+    max_y = INT_MIN;
+    points.clear();
 }
 
 //* cross product of two vectors
 double poly::cross(std::vector<double> v1, std::vector<double> v2) {
     return v1[0] * v2[1] - v1[1] * v2[0];
+}
+
+//* console input of vertex set
+void poly::add_point(std::pair<double, double> p) {
+    points.emplace_back(p);
+    min_x = std::min(min_x, p.first);
+    max_x = std::max(max_x, p.first);
+    min_y = std::min(min_y, p.second);
+    max_y = std::max(max_y, p.second);
+}
+
+//* console input of vertex set 
+//! special case: input a curve, should assign the control point (center), src and dst
+//* gap in the curve is 0.1, subject to changes if needed
+void poly::add_curve(std::pair<double, double> src, std::pair<double, double> dst, std::pair<double, double> ctrl) {
+    double angle_1 = atan2(src.second - ctrl.second, src.first - ctrl.first);
+    double angle_2 = atan2(dst.second - ctrl.second, dst.first - ctrl.first);
+    if (angle_1 < 0) {
+        angle_1 += 2 * M_PI;
+    }
+    if (angle_2 < 0) {
+        angle_2 += 2 * M_PI;
+    }
+
+    double radius = sqrt(pow(src.first - ctrl.first, 2) + pow(src.second - ctrl.second, 2));
+
+    if (angle_1 > angle_2) {
+        std::swap(angle_1, angle_2);
+    }
+
+    for (double angle = angle_1; angle <= angle_2; angle += 0.1) {
+        double x = ctrl.first + radius * cos(angle);
+        double y = ctrl.second + radius * sin(angle);
+        std::cout << x << " " << y << std::endl;
+        add_point({x, y});
+    }
 }
 
 //* return 1 if regular intersection, -2 if irregular intersection (parallel)
@@ -429,7 +475,26 @@ double poly::area(std::pair<double, double> src) {
     return area_helper(get_vertex_set(src));
 }
 
-void poly::execute() {
+void poly::set_inside_set() {
+    #pragma omp parallel num_threads(8)
+    {
+        #pragma omp for
+        for (int i = min_x; i < max_x; ++i) {
+            std::vector<std::pair<double, double>> temp;
+            for (int j = min_y; j < max_y; ++j) {
+                if (inside({i, j})) {
+                    temp.emplace_back(i, j);
+                }
+            }
+            #pragma omp critical
+            {
+                std::merge(vertex_inside.begin(), vertex_inside.end(), temp.begin(), temp.end(), vertex_inside.begin());
+            }
+        }
+    }
+}
+
+void poly::execute_one_camera() {
     auto f = [](double x, double y) {return x > y;};
     std::map<double, std::pair<double, double>, decltype(f)> m(f);
     
@@ -450,7 +515,7 @@ void poly::execute() {
             }
         }
     }
-
+    
     // non-parallel version
     // for (int i = min_x; i < max_x; ++i) {
     //     for (int j = min_y; j < max_y; ++j) {
@@ -478,4 +543,33 @@ void poly::execute() {
     //     std::cout << x << " " << y << std::endl;
     // }
     return ;
+}
+
+void poly::execute_two_camera() {
+    set_inside_set();
+    auto f = [](double x, double y) {return x > y;};
+    std::map<double, std::vector<std::pair<double, double>>, decltype(f)> m(f);
+
+    #pragma omp parallel num_threads(8)
+    {   
+        int size = vertex_inside.size();
+        #pragma omp for 
+        for (int v1 = 0; v1 < size; ++v1) {
+            std::map<double, std::vector<std::pair<double, double>>> temp;
+            for (int v2 = v1 + 1; v2 < size; ++v2) {
+                auto p1 = vertex_inside[v1];
+                auto p2 = vertex_inside[v2];
+                auto intersection_vertex = polygon_intersect(get_vertex_set(p1), get_vertex_set(p2));
+                temp[area_helper(intersection_vertex)] = {p1, p2};
+            }
+            #pragma omp critical
+            {
+                m.merge(temp);
+            }
+        }
+    }
+    auto it = m.begin();
+    this->area_covered = it->first;
+    this->pos_in_pair = it->second;
+    this->vertex_set = polygon_intersect(get_vertex_set(pos_in_pair[0]), get_vertex_set(pos_in_pair[1]));
 }
