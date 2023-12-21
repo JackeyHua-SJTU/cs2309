@@ -1,5 +1,6 @@
 #include "poly.h"
 #include <unordered_set>
+#include <deque>
 #include <algorithm>
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
@@ -40,6 +41,31 @@ bool poly::vertex_on_edge(std::pair<double, double> src) {
         auto next = points[(i + 1) % points.size()];
         if (is_on_line(src, cur, next) == 1) {
             return true;
+        }
+    }
+    return false;
+}
+
+bool poly::is_valid_edge(std::pair<double, double> src, std::pair<double, double> dst) {
+    if (src == dst) {
+        return false;
+    }
+    int size = points.size();
+    for (int i = 0; i < size; ++i) {
+        auto cur = points[i];
+        auto next = points[(i + 1) % size];
+        if (is_on_line(src, cur, next) == 1 && is_on_line(dst, cur, next) == 1) {
+            return true;
+        }
+    }
+
+    if (flag) {
+        for (int i = 0; i < obstacle.size(); ++i) {
+            auto cur = obstacle[i];
+            auto next = obstacle[(i + 1) % obstacle.size()];
+            if (is_on_line(src, cur, next) == 1 && is_on_line(dst, cur, next) == 1) {
+                return true;
+            }
         }
     }
     return false;
@@ -387,6 +413,15 @@ std::set<std::pair<double, double>> poly::visible(std::pair<double, double> src)
             }
         }
     }
+
+    if (flag) {
+        for (int i = 0; i < obstacle.size(); ++i) {
+            if (inside_obstacle(src, obstacle[i])) {
+                res.emplace(obstacle[i]);
+            }
+        }
+    }
+
     return res;
 }
 
@@ -534,8 +569,14 @@ void poly::execute_one_camera() {
         for (int i = min_x; i < max_x; ++i) {
             std::map<double, std::pair<double, double>> temp;
             for (int j = min_y; j < max_y; ++j) {
-                if (!inside({i, j})) {
-                    continue;
+                if (flag) {
+                    if (!inside_obstacle({i, j})) {
+                        continue;
+                    }
+                } else {
+                    if (!inside({i, j})) {
+                        continue;
+                    }
                 }
                 temp[area({i, j})] = {i, j};
             }
@@ -896,6 +937,95 @@ bool poly::inside_obstacle(std::pair<double, double> src, std::pair<double, doub
     return true;
 }
 
+bool poly::is_vertex(std::pair<double, double> p) {
+    int size = points.size();
+    for (int i = 0; i < size; ++i) {
+        if (abs(points[i].first - p.first) < 1e-6 && abs(points[i].second - p.second) < 1e-6) {
+            return true;
+        }
+    }
+
+    if (flag) {
+        for (int i = 0; i < obstacle.size(); ++i) {
+            if (abs(obstacle[i].first - p.first) < 1e-6 && abs(obstacle[i].second - p.second) < 1e-6) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 std::vector<std::pair<double, double>> poly::sort_vertex_obstacle(std::set<std::pair<double, double>> st, std::pair<double, double> src) {
-    
+    std::vector<std::pair<double, double>> res;
+    std::deque<std::pair<double, double>> dq;
+    bool flag = is_vertex(src);
+    if (!flag) {
+        st.erase(src);
+    }
+    for (auto&& i : st) {
+        dq.emplace_back(i);
+    }
+    auto f = [src](std::pair<double, double> p1, std::pair<double, double> p2) {
+        double t1 = atan2(p1.second - src.second, p1.first - src.first);
+        double t2 = atan2(p2.second - src.second, p2.first - src.first);
+        if (abs(t1 - t2) > 1e-6) {
+            return t1 < t2;
+        } else {
+            return ((p1.first - src.first) * (p1.first - src.first) + (p1.second - src.second) * (p1.second - src.second)) < 
+                    ((p2.first - src.first) * (p2.first - src.first) + (p2.second - src.second) * (p2.second - src.second));
+        }
+    };
+    std::sort(dq.begin(), dq.end(), f);
+    double prev_angle = atan2(dq[0].second - src.second, dq[0].first - src.first);
+    std::vector<std::pair<double, double>> temp_vc;
+    std::vector<std::vector<std::pair<double, double>>> vc;
+    if (flag) {
+        vc.push_back({src});
+    }
+    while (!dq.empty()) {
+        auto cur = dq.front();
+        dq.pop_front();
+        double cur_angle = atan2(cur.second - src.second, cur.first - src.first);
+        if (abs(cur_angle - prev_angle) < 1e-6) {
+            temp_vc.emplace_back(cur);
+            continue;
+        } else {
+            vc.emplace_back(temp_vc);
+            temp_vc.clear();
+            temp_vc.emplace_back(cur);
+            prev_angle = cur_angle;
+        }
+    }
+    if (!temp_vc.empty()) {
+        vc.emplace_back(temp_vc);
+    }
+
+    int size = vc.size();
+    for (int i = 0; i < size; ++i) {
+        auto cur = vc[i];
+        auto next = vc[(i + 1) % size];
+        auto cur_front = cur.front();
+        auto cur_back = cur.back();
+        auto next_front = next.front();
+        auto next_back = next.back();
+        if (is_valid_edge(cur_back, next_front)) {
+            continue;
+        } else if (is_valid_edge(cur_back, next_back)) {
+            std::reverse(next.begin(), next.end());
+        } else if(is_valid_edge(cur_front, next_front)) {
+            std::reverse(cur.begin(), cur.end());
+        } else if (is_valid_edge(cur_front, next_back)) {
+            std::reverse(cur.begin(), cur.end());
+            std::reverse(next.begin(), next.end());
+        }
+        vc[i] = cur;
+        vc[(i + 1) % size] = next;
+    }
+    for (auto&& i : vc) {
+        for (auto&& j : i) {
+            res.emplace_back(j);
+        }
+    }
+    return res;
 }

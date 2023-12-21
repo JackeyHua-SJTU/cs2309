@@ -15,6 +15,8 @@ class poly {
         double cross(std::vector<double> v1, std::vector<double> v2);
 
     public:
+        bool is_vertex(std::pair<double, double> p);
+        bool is_valid_edge(std::pair<double, double> src, std::pair<double, double> dst);
         bool vertex_on_edge(std::pair<double, double> p);
         bool is_valid_obstacle();
         inline void set_obstacle(std::vector<std::pair<double, double>> vc) {obstacle = vc;}
@@ -46,7 +48,9 @@ class poly {
         bool inside_obstacle(std::pair<double, double> p);
         std::set<std::pair<double, double>> intersect_obstacle(std::pair<double, double> src, std::pair<double, double> dst);
         bool inside_obstacle(std::pair<double, double> src, std::pair<double, double> dst);
-        std::vector<std::pair<double, double>> poly::sort_vertex_obstacle(std::set<std::pair<double, double>> st,std::pair<double, double> src);
+        std::vector<std::pair<double, double>> sort_vertex_obstacle(std::set<std::pair<double, double>> st,std::pair<double, double> src);
+        inline bool get_flag() {return flag;}
+        inline auto get_obstacle() {return obstacle;}
 };
 
 #endif
