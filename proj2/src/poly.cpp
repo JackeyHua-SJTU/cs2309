@@ -32,9 +32,12 @@ poly::poly() {
     min_y = INT_MAX;
     max_y = INT_MIN;
     this->area_covered = 0.0;
+    this->flag = false;
     points.clear();
 }
 
+//* return true if src is on the edge of polygon specified by points
+//* used in judging whether a point is inside a polygon with obstacle inside
 bool poly::vertex_on_edge(std::pair<double, double> src) {
     for (int i = 0; i < points.size(); ++i) {
         auto cur = points[i];
@@ -46,6 +49,7 @@ bool poly::vertex_on_edge(std::pair<double, double> src) {
     return false;
 }
 
+//* return true if segment (src, dst) is part of an edge, or just an edge
 bool poly::is_valid_edge(std::pair<double, double> src, std::pair<double, double> dst) {
     if (src == dst) {
         return false;
@@ -216,6 +220,7 @@ int poly::is_on_line(std::pair<double, double> p, std::pair<double, double> l_sr
     return -1;
 }
 
+//* return true if p is inside the polygon
 bool poly::inside(std::pair<double, double> p) {
     const double eps = 1e-6;
     int cnt = 0;
@@ -248,6 +253,7 @@ bool poly::inside(std::pair<double, double> p) {
     return (cnt % 2);
 }
 
+//* return true if segment (src, dst) is fully inside the polygon
 bool poly::inside(std::pair<double, double> src, std::pair<double, double> dst) {
     if (!inside(src) || !inside(dst)) {
         return false;
@@ -399,6 +405,8 @@ std::set<std::pair<double, double>> poly::intersect(std::pair<double, double> sr
     return res;
 }
 
+//* get all the visible vertices standing at src
+//! vertices should be in vertex set
 std::set<std::pair<double, double>> poly::visible(std::pair<double, double> src) {
     std::set<std::pair<double, double>> res;
     int size = points.size();
@@ -425,6 +433,7 @@ std::set<std::pair<double, double>> poly::visible(std::pair<double, double> src)
     return res;
 }
 
+//* return the intersection polygon of vc1 and vc2
 std::vector<std::pair<double, double>> poly::polygon_intersect(std::vector<std::pair<double, double>> vc1, std::vector<std::pair<double, double>> vc2) {
     std::vector<std::pair<double, double>> res;
     Polygon poly1, poly2;
@@ -457,6 +466,7 @@ std::vector<std::pair<double, double>> poly::polygon_intersect(std::vector<std::
     return res;
 }
 
+//* count the area of polygon specified by edge set vc
 double poly::area_helper(std::vector<std::pair<double, double>> vc) {
     double res = 0.0;
     int size = vc.size();
@@ -472,6 +482,7 @@ double poly::area_helper(std::vector<std::pair<double, double>> vc) {
     return abs(res);
 }
 
+//* reorder vertices in st
 std::vector<std::pair<double, double>> poly::sort_vertex(std::set<std::pair<double, double>> st) {  
     // use a lambda function to get the possible vertex on a line 
     // iterate through all edges
@@ -517,6 +528,8 @@ std::vector<std::pair<double, double>> poly::sort_vertex(std::set<std::pair<doub
     return res;
 }
 
+//* return all the vertices that can be seen at point src
+//! vertices are not restricted to be inside the vertex sets
 std::vector<std::pair<double, double>> poly::get_vertex_set(std::pair<double, double> src) {
     auto vis = visible(src);
     std::set<std::pair<double, double>> res;
@@ -534,10 +547,13 @@ std::vector<std::pair<double, double>> poly::get_vertex_set(std::pair<double, do
     }
 }
 
+//* count the area of visible area at point src
+//* high level interface
 double poly::area(std::pair<double, double> src) {
     return area_helper(get_vertex_set(src));
 }
 
+//* get all the pixels that are inside the polygon
 void poly::set_inside_set() {
     #pragma omp parallel num_threads(8)
     {
@@ -559,6 +575,7 @@ void poly::set_inside_set() {
     }
 }
 
+//* high level interface
 void poly::execute_one_camera() {
     auto f = [](double x, double y) {return x > y;};
     std::map<double, std::pair<double, double>, decltype(f)> m(f);
@@ -691,6 +708,7 @@ void poly::execute_two_camera() {
     // this->vertex_set = polygon_intersect(get_vertex_set(pos_in_pair[0]), get_vertex_set(pos_in_pair[1]));
 }
 
+//* check if the obstacle is fully inside the polygon
 bool poly::is_valid_obstacle() {
     int size = obstacle.size();
     if (size < 3) {
@@ -711,7 +729,7 @@ bool poly::is_valid_obstacle() {
     return true;
 }
 
-//* inside funtion for polygon with an obstacle inside
+//* vertex inside funtion for polygon with an obstacle inside
 //* inside the polygon, not the obstacle
 bool poly::inside_obstacle(std::pair<double, double> p) {
     if (!inside(p)) {
@@ -727,6 +745,7 @@ bool poly::inside_obstacle(std::pair<double, double> p) {
     return true;
 }
 
+//* intersect function for polygon with an obstacle inde
 std::set<std::pair<double, double>> poly::intersect_obstacle(std::pair<double, double> src, std::pair<double, double> dst) {
     double threshold;
     const double eps = 1e-6;
@@ -847,6 +866,7 @@ std::set<std::pair<double, double>> poly::intersect_obstacle(std::pair<double, d
     return res;
 }
 
+//* segment inside function for polygon with an obstacle inside
 bool poly::inside_obstacle(std::pair<double, double> src, std::pair<double, double> dst) {
     if (!inside_obstacle(src) || !inside_obstacle(dst)) {
         return false;
@@ -937,6 +957,7 @@ bool poly::inside_obstacle(std::pair<double, double> src, std::pair<double, doub
     return true;
 }
 
+//* check if p is in the vertex set
 bool poly::is_vertex(std::pair<double, double> p) {
     int size = points.size();
     for (int i = 0; i < size; ++i) {
@@ -956,6 +977,7 @@ bool poly::is_vertex(std::pair<double, double> p) {
     return false;
 }
 
+//* reorder function for polygon with an obstacle inside
 std::vector<std::pair<double, double>> poly::sort_vertex_obstacle(std::set<std::pair<double, double>> st, std::pair<double, double> src) {
     std::vector<std::pair<double, double>> res;
     std::deque<std::pair<double, double>> dq;
