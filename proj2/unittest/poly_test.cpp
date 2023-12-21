@@ -161,4 +161,18 @@ namespace {
         EXPECT_EQ(p2.intersect_obstacle({3, 5}, {0, 10}), s4);
     }
 
+    TEST_F (poly_test, test_is_valid_edge) {
+        EXPECT_TRUE(p2.is_valid_edge({-5, 0}, {-5, 15}));
+        EXPECT_TRUE(p2.is_valid_edge({0, 10}, {10, 10}));
+        EXPECT_TRUE(p2.is_valid_edge({10, 10}, {7, 7}));
+        EXPECT_TRUE(p2.is_valid_edge({7, 7}, {10, 5}));
+        EXPECT_TRUE(p2.is_valid_edge({0, 10}, {1, 10}));
+        EXPECT_TRUE(p2.is_valid_edge({0, 10}, {-2, 12}));
+        EXPECT_FALSE(p2.is_valid_edge({-5, 0}, {0, 10}));
+        EXPECT_FALSE(p2.is_valid_edge({-5, 0}, {10, 10}));
+        EXPECT_FALSE(p2.is_valid_edge({-5, 0}, {0, 12}));
+        EXPECT_FALSE(p2.is_valid_edge({-2, 2}, {8, 2}));
+        EXPECT_FALSE(p2.is_valid_edge({7, 3}, {7, 7}));
+    }
+
 }
