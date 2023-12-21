@@ -28,11 +28,14 @@ This project is a variant of gallery guardian problem. We need to find the posit
     - FLTK
     - OpenMP
     - Google Test (optional)
-      - `git clone https://github.com/google/googletest.git`
-      - `cd googletest`
-      - `mkdir build && cd build`
-      - `cmake ..`
-      - `make`
+
+```bash
+git clone https://github.com/google/googletest.git
+cd googletest
+mkdir build && cd build
+cmake ..
+make
+```
   
 It is recommended to use `homebrew` to install dependencies on Mac.
 
