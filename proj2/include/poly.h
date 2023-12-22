@@ -20,7 +20,8 @@ class poly {
         double area_covered;
         std::pair<double, double> pos;  //* for one-camera case
         std::vector<std::pair<double, double>> pos_in_pair; //* only for two-camera case
-        std::vector<std::pair<double, double>> vertex_set;
+        std::vector<std::pair<double, double>> vertex_set;  //* for one-camera case
+        std::vector<std::vector<std::pair<double, double>>> polygon_union_set; //* for two-camera case
         
         // initialization functions
         poly();
@@ -61,7 +62,7 @@ class poly {
         std::vector<std::pair<double, double>> get_vertex_set(std::pair<double, double> src);
         std::vector<std::pair<double, double>> sort_vertex(std::set<std::pair<double, double>> st);
         std::vector<std::pair<double, double>> sort_vertex_obstacle(std::set<std::pair<double, double>> st,std::pair<double, double> src);
-        std::vector<std::pair<double, double>> polygon_intersect(std::vector<std::pair<double, double>> vc1, std::vector<std::pair<double, double>> vc2);
+        std::vector<std::vector<std::pair<double, double>>> polygon_union(std::vector<std::pair<double, double>> vc1, std::vector<std::pair<double, double>> vc2);
 };
 
 #endif
