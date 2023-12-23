@@ -5,10 +5,12 @@
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
+#include <boost/foreach.hpp>
 #include <omp.h>
 #include <map>
 #include <cmath>
 #include <iostream>
+#include <random>
 
 namespace bg = boost::geometry;
 
@@ -433,37 +435,52 @@ std::set<std::pair<double, double>> poly::visible(std::pair<double, double> src)
     return res;
 }
 
-//* return the intersection polygon of vc1 and vc2
-std::vector<std::pair<double, double>> poly::polygon_intersect(std::vector<std::pair<double, double>> vc1, std::vector<std::pair<double, double>> vc2) {
-    std::vector<std::pair<double, double>> res;
+//* return the union polygon of vc1 and vc2
+return_value poly::polygon_union(std::vector<std::pair<double, double>> vc1, std::vector<std::pair<double, double>> vc2) { 
+    return_value r;
+    std::vector<std::vector<std::pair<double, double>>> res;
     Polygon poly1, poly2;
+    double area = 0.0;
 
     std::vector<Point> points1, points2;
     for (auto&& [x, y] : vc1) {
         points1.emplace_back(x, y);
+        // std::cout << x << " " << y << std::endl;
     }
+
     for (auto&& [x, y] : vc2) {
         points2.emplace_back(x, y);
+        // std::cout << x << " " << y << std::endl;
     }
 
     bg::assign_points(poly1, points1);
     bg::assign_points(poly2, points2);
     //! 对于非凸多边形，不确定是否需要correct来对点进行排序
-//    bg::correct(poly1);
-//    bg::correct(poly2);
+    bg::correct(poly1);
+    bg::correct(poly2);
+    // bg::buffer(poly1, poly1, 0.0);
 
     std::vector<Polygon> intersection;
-    bg::intersection(poly1, poly2, intersection);
+    bg::union_(poly1, poly2, intersection);
+    // std::cout << "intersection size: " << intersection.size() << std::endl;
     if (intersection.empty()) {
-        return res;
+        return r;
     }
-    Polygon inter = intersection[0];
 
-    for (auto&& p : inter.outer()) {
-        res.emplace_back(p.x(), p.y());
+    for (auto&& poly : intersection) {
+        area += bg::area(poly);
+        std::vector<std::pair<double, double>> temp;
+        for (auto&& p : poly.outer()) {
+            temp.emplace_back(p.x(), p.y());
+            // std::cout << p.x() << " " << p.y() << std::endl;
+        }
+        temp.pop_back();
+        res.emplace_back(temp);
     }
-    res.pop_back();
-    return res;
+    r.polygon = res;
+    r.area = area;
+
+    return r;
 }
 
 //* count the area of polygon specified by edge set vc
@@ -561,7 +578,7 @@ void poly::set_inside_set() {
         for (int i = min_x; i < max_x; ++i) {
             std::vector<std::pair<double, double>> temp;
             for (int j = min_y; j < max_y; ++j) {
-                if (inside({i, j})) {
+                if (inside_obstacle({i, j})) {
                     temp.emplace_back(i, j);
                 }
             }
@@ -639,6 +656,9 @@ void poly::execute_two_camera() {
     set_inside_set();
     int size = vertex_inside.size();
     double max_area = 0.0;
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::uniform_int_distribution<int> dis(0, size - 1);
     // auto f = [](double x, double y) {return x > y;};
     // std::map<double, std::vector<std::pair<double, double>>, decltype(f)> m(f);
 
@@ -646,13 +666,22 @@ void poly::execute_two_camera() {
     {
         #pragma omp for 
         for (int v1 = 0; v1 < size; ++v1) {
+            std::vector<int> rnd_index; // pruning
+            for (int i = 0; i < 40; ++i) {
+                auto cur = dis(g);
+                while (cur == v1) {
+                    cur = dis(g);
+                }
+                rnd_index.emplace_back(cur);
+            }
+
             std::map<double, std::vector<std::pair<double, double>>> temp;
             double area = 0.0;
             std::vector<std::pair<double, double>> temp_pos;
-            std::vector<std::pair<double, double>> temp_vertex;
-            for (int v2 = v1 + 1; v2 < size; ++v2) {
+            std::vector<std::vector<std::pair<double, double>>> temp_poly_set;
+            for (int v2 = 0; v2 < 40; ++v2) {
                 auto p1 = vertex_inside[v1];
-                auto p2 = vertex_inside[v2];
+                auto p2 = vertex_inside[rnd_index[v2]];
                 std::cout << "index " << v1 << " and " << v2 << std::endl;
                 auto p1_set = get_vertex_set(p1);
                 auto p2_set = get_vertex_set(p2);
@@ -665,22 +694,32 @@ void poly::execute_two_camera() {
                     std::cout << x << " " << y << std::endl;
                 }
 
-                auto intersection_vertex = polygon_intersect(p1_set, p2_set);
-                std::cout << "intersection vertex in index " << v1 << " " << v2 << " has size: " << intersection_vertex.size() << std::endl;
-                double cur_area = area_helper(p1_set) + area_helper(p2_set) - area_helper(intersection_vertex);
-                std::cout << "cur area : " << cur_area << std::endl;
+                auto intersection_vertex = polygon_union(p1_set, p2_set);
+                std::cout << "intersection vertex in index " << v1 << " " << v2 << " has size: " << intersection_vertex.polygon.size() << std::endl;
+                double cur_area = intersection_vertex.area;
+                // for (auto i : intersection_vertex) {
+                //     cur_area += area_helper(i);
+                // }
+
                 if (cur_area > area) {
                     area = cur_area;
                     temp_pos = {p1, p2};
-                    temp_vertex = intersection_vertex;
+                    temp_poly_set = intersection_vertex.polygon;
                 }
+                // double cur_area = area_helper(p1_set) + area_helper(p2_set) - area_helper(intersection_vertex);
+                // std::cout << "cur area : " << cur_area << std::endl;
+                // if (cur_area > area) {
+                //     area = cur_area;
+                //     temp_pos = {p1, p2};
+                //     temp_vertex = intersection_vertex;
+                // }
             }
             #pragma omp critical
             {
                 if (area > this->area_covered) {
                     area_covered = area;
                     pos_in_pair = temp_pos;
-                    vertex_set = temp_vertex;
+                    polygon_union_set = temp_poly_set;
                 }
             }
         }

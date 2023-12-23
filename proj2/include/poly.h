@@ -4,6 +4,11 @@
 #include <vector>
 #include <set>
 
+struct return_value {
+    std::vector<std::vector<std::pair<double, double>>> polygon;
+    double area;
+};
+
 class poly {
     private:
         std::vector<std::pair<double, double>> points;
@@ -62,7 +67,7 @@ class poly {
         std::vector<std::pair<double, double>> get_vertex_set(std::pair<double, double> src);
         std::vector<std::pair<double, double>> sort_vertex(std::set<std::pair<double, double>> st);
         std::vector<std::pair<double, double>> sort_vertex_obstacle(std::set<std::pair<double, double>> st,std::pair<double, double> src);
-        std::vector<std::vector<std::pair<double, double>>> polygon_union(std::vector<std::pair<double, double>> vc1, std::vector<std::pair<double, double>> vc2);
+        return_value polygon_union(std::vector<std::pair<double, double>> vc1, std::vector<std::pair<double, double>> vc2);
 };
 
 #endif
