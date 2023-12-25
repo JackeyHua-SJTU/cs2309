@@ -682,20 +682,20 @@ void poly::execute_two_camera() {
             for (int v2 = 0; v2 < 40; ++v2) {
                 auto p1 = vertex_inside[v1];
                 auto p2 = vertex_inside[rnd_index[v2]];
-                std::cout << "index " << v1 << " and " << v2 << std::endl;
+                // std::cout << "index " << v1 << " and " << v2 << std::endl;
                 auto p1_set = get_vertex_set(p1);
                 auto p2_set = get_vertex_set(p2);
                 
-                for (auto&& [x, y] : p1_set) {
-                    std::cout << x << " " << y << std::endl;
-                }
-                std::cout << std::endl;
-                for (auto&& [x, y] : p2_set) {
-                    std::cout << x << " " << y << std::endl;
-                }
+                // for (auto&& [x, y] : p1_set) {
+                //     std::cout << x << " " << y << std::endl;
+                // }
+                // std::cout << std::endl;
+                // for (auto&& [x, y] : p2_set) {
+                //     std::cout << x << " " << y << std::endl;
+                // }
 
                 auto intersection_vertex = polygon_union(p1_set, p2_set);
-                std::cout << "intersection vertex in index " << v1 << " " << v2 << " has size: " << intersection_vertex.polygon.size() << std::endl;
+                // std::cout << "intersection vertex in index " << v1 << " " << v2 << " has size: " << intersection_vertex.polygon.size() << std::endl;
                 double cur_area = intersection_vertex.area;
                 // for (auto i : intersection_vertex) {
                 //     cur_area += area_helper(i);
