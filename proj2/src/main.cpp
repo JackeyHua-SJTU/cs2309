@@ -25,10 +25,10 @@ int main() {
 
 
     auto start = high_resolution_clock::now();
-    // window w(1000, 800, p1, 1, "poly");
-    // window w(1000, 800, points, 1, "poly");
-    // window w(1000, 800, p1, o1, 1, "poly");
-    window w(1000, 800, points, 2, "poly");
+    // window w(1000, 800, p1, 1, "poly");  // test case 1
+    // window w(1000, 800, points, 1, "poly");  // test case 2
+    // window w(1000, 800, p1, o1, 1, "poly");  // test case 3
+    window w(1000, 800, points, 2, "poly"); // test case 4
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(stop - start);
     std::cout << "time taken : " << duration.count() << std::endl;
