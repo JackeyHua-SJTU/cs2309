@@ -4,8 +4,9 @@
 
 ## Test Input
 测试图片和测试结果的图片均在`test`文件夹下。
-- lake.jpeg
+- `src/lake.jpeg`
   - 195:200m (0.975)
+  - 运行结果见`test/lake-result.png`
   - 顺序点集如下
 
 ```txt
@@ -51,8 +52,9 @@
 249	629
 206	628
 ```
-- demo.png
+- `src/demo.png`
   - 32:200m (0.16)
+  - 运行结果见`test/demo-result.png`
   - 顺序点集如下
 
 ```txt
@@ -61,4 +63,12 @@
 815 136
 834 461
 391 350
+```
+
+## Run the proj
+```bash
+cd build
+cmake ..
+make
+./polygon
 ```
